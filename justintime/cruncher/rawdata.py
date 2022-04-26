@@ -15,28 +15,26 @@ ch_map = detchannelmaps.make_map('VDColdboxChannelMap')
 
 # Get the list of trigger records
 def get_trigger_record_list(file_path: str) -> list:
-    dd = hdf5libs.DAQDecoder(file_path, 10000) # number of events = 10000 is not used
-    datasets = dd.get_datasets()
-    print(datasets)
+    dd = hdf5libs.HDF5RawDataFile(file_path)
 
-    return [int(m.group(1)) for m in (trig_rec_hdr_regex.match(d) for d in datasets) if m]
+    records = dd.get_all_record_ids()
+    print(records)
+
+    return [ rid[0] for rid in records ]
 
 
 # Read a trigger record and build a pandas dataframe
 def read_trigger_record(file_path: str, tr_num: int, ch_map: detchannelmaps.TPCChannelMap):
-    dd = hdf5libs.DAQDecoder(file_path, 10000) # number of events = 10000 is not used
-
-    # get the list of datasets
-    datasets = dd.get_datasets()
+    dd = hdf5libs.HDF5RawDataFile(file_path)
 
     # TODO: replace with regex?
-    frag_datasets = [ d for d in datasets if d.startswith(f'//TriggerRecord{tr_num:05}') and 'TriggerRecordHeader' not in d]
-    trghdr_datasets = [ d for d in datasets if d.startswith(f'//TriggerRecord{tr_num:05}') and 'TriggerRecordHeader' in d]
+    frag_datasets = dd.get_fragment_dataset_paths(tr_num)
+    trghdr_datasets = dd.get_trigger_record_header_dataset_path(tr_num)
 
     if len(trghdr_datasets) != 1:
         logging.warning(f"Multiple trigger record headers found {trghdr_datasets}")
 
-    trghdr = dd.get_trh_ptr(trghdr_datasets[0])
+    trghdr = dd.get_trh(trghdr_datasets[0])
 
     tr_info = {
         'run_number': trghdr.get_run_number(),
@@ -46,7 +44,7 @@ def read_trigger_record(file_path: str, tr_num: int, ch_map: detchannelmaps.TPCC
 
     links = {}
     for d in frag_datasets:
-        frag = dd.get_frag_ptr(d)
+        frag = dd.get_frag(d)
         frag_hdr = frag.get_header()
 
         logging.debug(f"Inspecting {d}")
