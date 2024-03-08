@@ -1,0 +1,140 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    kluctl.io/skip-delete-if-tags: "true"
+  labels:
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+  name: justintime
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: cvmfs-dunedaq-osg
+provisioner: cvmfs.csi.cern.ch
+parameters:
+  repository: dunedaq.opensciencegrid.org
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cvmfs-dunedaq-osg
+  namespace: justintime
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 1
+  storageClassName: cvmfs-dunedaq-osg
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: cvmfs-dunedaq-devel-osg
+provisioner: cvmfs.csi.cern.ch
+parameters:
+  repository: dunedaq-development.opensciencegrid.org
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cvmfs-dunedaq-devel-osg
+  namespace: justintime
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 1
+  storageClassName: cvmfs-dunedaq-devel-osg
+---
+# This deployment depends on the CVMFS-csi
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/app: justintime
+    app.kubernetes.io/component: justintime
+  name: justintime
+  namespace: justintime
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/app: justintime
+      app.kubernetes.io/component: justintime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/app: justintime
+        app.kubernetes.io/component: justintime
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: Exists
+      containers:
+      - image: ghcr.io/dune-daq/justintime:latest
+        imagePullPolicy: Always
+        name: justintime
+        ports:
+        - containerPort: 8001
+          name: http
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            memory: 8Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10000
+          runAsGroup: 11000
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMountes:
+          - name: cvmfs-dunedaq-osg
+            mountPath: /cvmfs/dunedaq.opensciencegrid.org
+          - name: cvmfs-dunedaq-devel-osg
+            mountPath: /cvmfs/dunedaq-development.opensciencegrid.org
+      volumes:
+        - name: cvmfs-dunedaq-osg
+          persistentVolumeClaim:
+            claimName: cvmfs-dunedaq-osg
+        - name: cvmfs-dunedaq-devel-osg
+          persistentVolumeClaim:
+            claimName: cvmfs-dunedaq-devel-osg
+      securityContext:
+        fsGroup: 11000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/app: justintime
+    app.kubernetes.io/component: justintime
+  name: justintime
+  namespace: justintime
+spec:
+  ports:
+  - port: 8001
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/app: justintime
+    app.kubernetes.io/component: justintime
+  type: ClusterIP
