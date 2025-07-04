@@ -88,55 +88,41 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                 try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                 except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
 
-                #logging.debug(f"Initial Time Stamp: {data.ts_min}")
-                #logging.debug(" ")
-                #logging.debug("Initial Dataframe:")
-                #logging.debug(data.df_tsoff)
-                
                 if data.df_dict["trh"].size != 0:
-                    #data.init_tp()
-                    #data.init_ta()
-                    # data.init_cnr()
-                    # rich.print(static_image,offset,overlay_tps,orientation,height)
+                    det_keys = [ key for key in data.df_dict if key.startswith('detw') and 'TPC' in key ]
                     children = []
                     if 'Z' in adcmap_selection:
                         logging.info("Z Plane selected")
-                        fig = plot_WIBEth_adc_map(df_dict=data.df_dict, tpc_det_key=data.tpc_datkey,
-                                                  plane=2, apa=apa_name,
-                                                  make_static=static_image,
-                                                  make_tp_overlay=overlay_tps,
-                                                  orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
+                        fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
+                                               plane=2, ele=apa_name,
+                                               make_static=static_image,
+                                               make_tp_overlay=overlay_tps,
+                                               orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"Z")
                         else:
-                            #return(html.Div(html.H6(nothing_to_plot())))
-                            #print(nothing_to_plot())
                             children += html.H6(nothing_to_plot())
                     if 'V' in adcmap_selection:
                         logging.info("V Plane selected")
-                        fig = plot_WIBEth_adc_map(df_dict=data.df_dict, tpc_det_key=data.tpc_datkey,
-                                                  plane=1, apa=apa_name,
-                                                  make_static=static_image,
-                                                  make_tp_overlay=overlay_tps,
-                                                  orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
+                        fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
+                                               plane=1, ele=apa_name,
+                                               make_static=static_image,
+                                               make_tp_overlay=overlay_tps,
+                                               orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"V")
                         else:
-                            #return(html.Div(html.H6(nothing_to_plot())))
-                            #print(nothing_to_plot())
                             children += html.H6(nothing_to_plot())
                     if 'U' in adcmap_selection:
                         logging.info("U Plane selected")
-                        fig = plot_WIBEth_adc_map(df_dict=data.df_dict, tpc_det_key=data.tpc_datkey,
-                                                  plane=0, apa=apa_name,
-                                                  make_static=static_image,
-                                                  make_tp_overlay=overlay_tps,
-                                                  orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
+                        fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
+                                               plane=0, ele=apa_name,
+                                               make_static=static_image,
+                                               make_tp_overlay=overlay_tps,
+                                               orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"U")
                         else:
-                            #return(html.Div(html.H6(nothing_to_plot())))
-                            #print(nothing_to_plot())
                             children += html.H6(nothing_to_plot())
 
                     if adcmap_selection:

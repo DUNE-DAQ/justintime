@@ -18,10 +18,13 @@ from .data_cache import TriggerRecordCache
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, default=False)
 @click.option('-p', '--port', type=int, default=8001)
+@click.option('--tpc-channel-map', required=True, type=str)
+@click.option('--pds-channel-map', type=str, default="SimplePDS")
+@click.option("--template",type=click.Choice(['flatly','darkly']),default='flatly')
 @click.argument('raw_data_path', type=click.Path(exists=True, file_okay=False))
-@click.argument('channel_map_id', type=click.Choice(['VDColdbox', 'ProtoDUNESP1', 'PD2HD', 'VST', 'FiftyL','ICEBERG']))
-@click.argument("template",type=click.Choice(['flatly','darkly']),default='flatly')
-def main(verbose: bool, raw_data_path: str, port: int, channel_map_id: str, template: str):
+def main(verbose: bool, raw_data_path: str, port: int,
+         tpc_channel_map: str, pds_channel_map: str,
+         template: str):
 
     FORMAT = "%(message)s"
     logging.basicConfig(
@@ -32,13 +35,13 @@ def main(verbose: bool, raw_data_path: str, port: int, channel_map_id: str, temp
     rich.print("Light mode" if theme==[dbc.themes.FLATLY] else "Dark mode")
     dash_app = Dash(__name__,external_stylesheets=theme)
 
-    init_dashboard(dash_app, raw_data_path, channel_map_id,template)
+    init_dashboard(dash_app, raw_data_path, tpc_channel_map, pds_channel_map, template)
     debug=True
-    dash_app.run_server(debug=debug, host='0.0.0.0', port=port)
+    dash_app.run(debug=debug, host='0.0.0.0', port=port)
 
 
-def init_dashboard(dash_app, raw_data_path, channel_map_id,template):
-    engine = FileHandle(raw_data_path, channel_map_id)
+def init_dashboard(dash_app, raw_data_path, tpc_channel_map, pds_channel_map, template):
+    engine = FileHandle(raw_data_path, tpc_channel_map, pds_channel_map)
 
     data_files = engine.list_files()
     logging.debug(data_files)

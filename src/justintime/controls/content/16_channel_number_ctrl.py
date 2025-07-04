@@ -4,9 +4,7 @@ import rich
 from .. import ctrl_class
 from ... data_cache import TriggerRecordData
 import numpy as np
-
-from dqmtools.dqmplots.plot_utils import rename_PD2HD_APAs
-
+import pandas as pd
 
 def return_obj(dash_app, engine, storage):
     ctrl_id = "16_channel_number_ctrl"
@@ -46,25 +44,25 @@ def init_callbacks(dash_app, engine, storage):
             return [""]
 
         try:
-            tpc_wvfm_key = "detw"+data.tpc_datkey[4:]
-            rename_PD2HD_APAs(data.df_dict)
-            df_tmp = data.df_dict[tpc_wvfm_key].reset_index()
-            df_tmp = df_tmp[["apa","plane","channel"]]
-            df_tmp = df_tmp.loc[df_tmp["apa"]==apa]
+            tpc_wvfm_keys = [ key for key in data.df_dict if key.startswith('detw') and 'TPC' in key ]
+            df_all = []
+            for key in tpc_wvfm_keys:
+                df_tmp = data.df_dict[key].reset_index()
+                df_tmp = df_tmp[["element","plane","channel"]]
+                df_tmp = df_tmp.loc[df_tmp["element"]==int(apa[3])] #should be APAX or CRPX
+                df_all.append(df_tmp)
+            df_tmp = pd.concat(df_all,ignore_index=True)
 
             channel_num=np.array([])
             if "Z" in plane:
                 plane_no = 2
                 channel_num = np.append(channel_num,df_tmp.loc[df_tmp["plane"]==plane_no]["channel"])
-                #channel_num.extend([{'label':str(n), 'value':(n)} for n in (data.df_Z.columns)])
             if "V" in plane:
                 plane_no = 1
                 channel_num = np.append(channel_num,df_tmp.loc[df_tmp["plane"]==plane_no]["channel"])
-                #channel_num.extend( [{'label':str(n), 'value':(n)} for n in (data.df_V.columns)])
             if "U" in plane:
                 plane_no = 0
                 channel_num = np.append(channel_num,df_tmp.loc[df_tmp["plane"]==plane_no]["channel"])
-                #channel_num.extend([{'label':str(n), 'value':(n)} for n in (data.df_U.columns)])
             return(list(np.sort(np.unique(channel_num))))
         except RuntimeError : return([""])
         except TypeError: return([""])

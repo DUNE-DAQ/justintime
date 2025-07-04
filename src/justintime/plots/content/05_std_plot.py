@@ -23,7 +23,6 @@ def return_obj(dash_app, engine, storage,theme):
     plot.add_ctrl("partition_select_ctrl")
     plot.add_ctrl("run_select_ctrl")
     plot.add_ctrl("06_trigger_record_select_ctrl")
-    #plot.add_ctrl("21_tp_multiplicity_ctrl")
     plot.add_ctrl("90_plot_button_ctrl")
 
     init_callbacks(dash_app, storage, plot_id,theme)
@@ -39,7 +38,6 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State("run_select_ctrl","value"),
         State('trigger_record_select_ctrl', "value"),
         State('file_select_ctrl', "value"),
-        #State("21_tp_multiplicity_ctrl","value"),
         State(plot_id, "children")
     )
     def plot_std_graph(n_clicks,refresh, partition,run,trigger_record, raw_data_file,original_state):
@@ -53,7 +51,12 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 if data.df_dict["trh"].size != 0:
 
                     try:
-                        fig_std = plot_WIBETH_by_channel_DQM(data.df_dict,"adc_rms",data.tpc_datkey,run=run,trigger=trigger_record)
+                        det_keys = [ key for key in data.df_dict if key.startswith('detd') and 'TPC' in key ]
+                        fig_std  = plot_TPCData_by_channel(df_dict=data.df_dict,var="adc_rms",
+                                                           det_keys=det_keys,
+                                                           tpc_chmap=storage.engine.tpc_ch_map,
+                                                           facet_by_plane=True,
+                                                           title=None,ylabel="ADC RMS")
                     except KeyError:
                         return( html.Div([html.H6("No relevant TPC data found"),
                                           html.H6(nothing_to_plot())]))

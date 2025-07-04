@@ -18,92 +18,44 @@ import hdf5libs
 import h5py
 import dqmtools.dataframe_creator as dfc
 import detchannelmaps
-
-class VSTChannelMap(object):
-
-    @staticmethod
-    def get_offline_channel_from_crate_slot_stream_chan(crate_no, slot_no, stream_no, ch_no):
-        
-        n_chan_per_stream = 64
-        n_streams_per_link = 4
-
-        link_no = stream_no >> 6
-        substream_no = stream_no & 0x3f
-        first_chan = n_chan_per_stream*substream_no
-        return VSTChannelMap.get_offline_channel_from_crate_slot_fiber_chan(crate_no, slot_no, link_no, ch_no+first_chan)
-
-    @staticmethod
-    def get_offline_channel_from_crate_slot_fiber_chan(crate_no, slot_no, fiber_no, ch_no):
-        return 256*fiber_no+ch_no
-
-    @staticmethod
-    def get_plane_from_offline_channel(ch):
-        return 0
     
 
 class FileHandle:
 
     match_exprs = ['*.hdf5', '*.hdf5.copied']
     max_cache_size = 10
-
-    @staticmethod 
-    def make_channel_map(map_name):
-
-        match map_name+'ChannelMap':
-            case 'VDColdboxChannelMap':
-                return detchannelmaps.make_map('VDColdboxChannelMap')
-            # case 'ProtoDUNESP1ChannelMap':
-            #     return detchannelmaps.make_map('ProtoDUNESP1ChannelMap')
-            case 'PD2HDChannelMap':
-                return detchannelmaps.make_map('PD2HDChannelMap')
-            case 'HDColdboxChannelMap':
-                return detchannelmaps.make_map('HDColdboxChannelMap')
-            case 'VSTChannelMap':
-                return VSTChannelMap()
-            case 'FiftyLChannelMap':
-                return detchannelmaps.make_map('FiftyLChannelMap')
-            case _:
-                raise RuntimeError(f"Unknown channel map id '{map_name}'")
     
     @staticmethod
     def get_det_name(channel_map_name):
         if channel_map_name == 'PD2HD':
             return 'HD_TPC'
+        if channel_map_name == 'PD2VDTPC':
+            return 'VD_BottomTPC'
         else:
             return channel_map_name
 
-
-    def __init__(self, data_path: str, channel_map_name: str = 'PDHD') -> None:
+    def __init__(self, data_path: str,
+                 tpc_channel_map_name: str,
+                 pds_channel_map_name: str) -> None:
 
         if not os.path.isdir(data_path):
             raise ValueError(f"Directory {data_path} does not exist")
 
-        self.data_path      = data_path
-        self.ch_map_name    = channel_map_name
-        self.ch_map         = self.make_channel_map(channel_map_name) 
-        self.det_name       = self.get_det_name(channel_map_name)
+        self.data_path       = data_path
+        self.tpc_ch_map_name = tpc_channel_map_name+"ChannelMap"
+        self.pds_ch_map_name = pds_channel_map_name+"ChannelMap"
+        try:
+            self.tpc_ch_map      = detchannelmaps.make_tpc_map(self.tpc_ch_map_name)
+        except:
+            raise ValueError(f"Failed to create {self.tpc_channel_map_name}")
+        try:
+            self.pds_ch_map      = detchannelmaps.make_pds_map(self.pds_ch_map_name)
+        except:
+            raise ValueError(f"Failed to create {self.pds_channel_map_name}")
+
+        self.det_name        = self.get_det_name(tpc_channel_map_name)
 
         self.cache = collections.OrderedDict()
-
-    def _init_o2h_map(self):
-        if self.ch_map_name == 'VDColdbox':
-            crate_no = 4
-            slots = range(4)
-            fibres = range(1, 3)
-            chans = range(256)
-        else:
-            return {}
-
-        o2h_map = {}
-        for slot_no in slots:
-            for fiber_no in fibres:
-                for ch_no in chans:
-                    off_ch = self.ch_map.get_offline_channel_from_crate_slot_fiber_chan(crate_no, slot_no, fiber_no, ch_no)
-                    if off_ch == 4294967295:
-                        continue
-                    o2h_map[off_ch] = (crate_no, slot_no, fiber_no, ch_no)
-
-        return o2h_map
 
     def list_files(self) -> list:
         files = []
@@ -186,9 +138,9 @@ class FileHandle:
         if op_env=="np04hd":
             return ["APA1","APA2","APA3","APA4"]
         if op_env=="np02vd":
-            return ["BottomCRP4","BottomCRP5"]
+            return ["CRP2","CRP3","CRP4","CRP5"]
         if op_env=="np02vdcoldbox":
-            return ["BottomCRP"]
+            return ["CRPX"]
         if op_env=="iceberghd" or op_env=="iceberg" or "icebergvd":
             return ["TPC-0-N","TPC-0-S"]
         return [""]

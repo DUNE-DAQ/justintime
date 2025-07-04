@@ -8,6 +8,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 import rich
 import logging
+
 from ... plotting_functions import add_dunedaq_annotation, selection_line,nothing_to_plot,tp_hist_for_mean_std
 from .. import plot_class
 
@@ -22,7 +23,6 @@ def return_obj(dash_app, engine, storage,theme):
     plot.add_ctrl("partition_select_ctrl")
     plot.add_ctrl("run_select_ctrl")
     plot.add_ctrl("06_trigger_record_select_ctrl")
-    #plot.add_ctrl("21_tp_multiplicity_ctrl")
     plot.add_ctrl("90_plot_button_ctrl")
 
     init_callbacks(dash_app, storage, plot_id,theme)
@@ -38,7 +38,6 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State("partition_select_ctrl","value"),
         State("run_select_ctrl","value"),
         State('file_select_ctrl', "value"),
-        #State("21_tp_multiplicity_ctrl","value"),
         State(plot_id, "children")
     )
     def plot_mean_graph(n_clicks,refresh, trigger_record,partition,run,raw_data_file,original_state):
@@ -58,7 +57,12 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                     if data.df_dict["trh"].size != 0:
 
                         try:
-                            fig_mean = plot_WIBETH_by_channel_DQM(data.df_dict,"adc_mean",data.tpc_datkey,run=run,trigger=trigger_record)
+                            det_keys = [ key for key in data.df_dict if key.startswith('detd') and 'TPC' in key ]
+                            fig_mean = plot_TPCData_by_channel(df_dict=data.df_dict,var="adc_mean",
+                                                               det_keys=det_keys,
+                                                               tpc_chmap=storage.engine.tpc_ch_map,
+                                                               facet_by_plane=True,
+                                                               title=None,ylabel="ADC Mean")
                         except KeyError:
                             return( html.Div([html.H6("No relevant TPC data found"),
                                               html.H6(nothing_to_plot())]))

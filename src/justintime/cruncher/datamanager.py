@@ -83,6 +83,8 @@ class DataManager:
                 return detchannelmaps.make_map('FiftyLChannelMap')
             case 'ICEBERGChannelMap':
                 return detchannelmaps.make_map('ICEBERGChannelMap')
+            case 'PD2VDTPCChannelMap':
+                return detchannelmaps.make_tpc_map('PD2VDTPCChannelMap')
             case _:
                 raise RuntimeError(f"Unknown channel map id '{map_name}'")
 
