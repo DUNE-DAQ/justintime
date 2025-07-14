@@ -31,6 +31,14 @@ def main(verbose: bool, raw_data_path: str, port: int,
         level="DEBUG" if verbose else "INFO", format=FORMAT, datefmt="[%X]", handlers=[RichHandler()]
     )
 
+    logging.getLogger("watchdog").setLevel(logging.INFO)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("inotify").setLevel(logging.WARNING)
+    logging.getLogger("inotify.adapters").setLevel(logging.WARNING)
+    #logging.getLogger().setLevel(logging.INFO)
+    #print(__name__)
+    #logging.getLogger("__main__").setLevel(logging.DEBUG)
+
     theme=([dbc.themes.FLATLY if template=='flatly' else dbc.themes.DARKLY])
     rich.print("Light mode" if theme==[dbc.themes.FLATLY] else "Dark mode")
     dash_app = Dash(__name__,external_stylesheets=theme)

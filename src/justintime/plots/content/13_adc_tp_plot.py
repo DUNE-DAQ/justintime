@@ -91,12 +91,13 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                 if data.df_dict["trh"].size != 0:
                     det_keys = [ key for key in data.df_dict if key.startswith('detw') and 'TPC' in key ]
                     children = []
+                    logging.debug(f"Making plot with adcmap_selection {adcmap_selection}, {apa_name}, overlay_tps {overlay_tps}")
                     if 'Z' in adcmap_selection:
                         logging.info("Z Plane selected")
                         fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
                                                plane=2, ele=apa_name,
                                                make_static=static_image,
-                                               make_tp_overlay=overlay_tps,
+                                               make_tp_overlay=("tp_overlay" in overlay_tps),
                                                orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"Z")

@@ -22,13 +22,16 @@ class TriggerRecordCache:
         self.shown_plots = new_shown_plots
 
     def get_trigger_record_data(self, trigger_record, raw_data_file):
+        logging.debug(f"Getting {raw_data_file} {trigger_record}")
         try:
             tr = self.raw_data_files[raw_data_file][trigger_record]
             # Mark tr as fresh
             i = self.tr_age.index( (raw_data_file, trigger_record) )
             self.tr_age.insert(0, self.tr_age.pop(i))
+            logging.debug(f"\tAlready found in cache. Returning.")
             return tr
         except KeyError:
+            logging.debug(f"\tKeyError --> not found in cache. Will add.")
             pass
 
         return self.add_trigger_record_to_file(trigger_record, raw_data_file)
@@ -61,9 +64,12 @@ class TriggerRecordCache:
 class TriggerRecordData:
     
     def __init__(self, engine, trigger_record, raw_data_file):
+        logging.debug(f"__init__ TriggerRecordData {raw_data_file} {trigger_record}")
         self.engine     = engine
         self.df_dict    = engine.load_entry(raw_data_file, int(trigger_record))
         self.keys       = self.df_dict.keys()
+
+        logging.debug(f"Found df_dict keys {self.keys}")
 
         indexies = np.array(self.df_dict["trh"].index[0]).astype(int)
         self.run        = indexies[0]

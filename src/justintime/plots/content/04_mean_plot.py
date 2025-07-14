@@ -44,8 +44,13 @@ def init_callbacks(dash_app, storage, plot_id,theme):
 
         load_figure_template(theme)
         if trigger_record and raw_data_file:
-            
+
+            logging.debug(f"Mean plot for {raw_data_file} {trigger_record}")
+
+            logging.debug(f"plot_id={plot_id}, shown_plots={storage.shown_plots}")
             if plot_id in storage.shown_plots:
+
+                    logging.debug(f"Grabbing trigger record.")
                     try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                     except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
                     
@@ -53,6 +58,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                     logging.info(" ")
                     logging.info("Initial Dataframe:")
                     logging.info(data.df_dict)
+                    logging.info(f"TPC channel map: {storage.engine.tpc_ch_map_name}")
 
                     if data.df_dict["trh"].size != 0:
 

@@ -27,7 +27,7 @@ class FileHandle:
     
     @staticmethod
     def get_det_name(channel_map_name):
-        if channel_map_name == 'PD2HD':
+        if channel_map_name == 'PD2HDTPC':
             return 'HD_TPC'
         if channel_map_name == 'PD2VDTPC':
             return 'VD_BottomTPC'
@@ -140,13 +140,16 @@ class FileHandle:
         if op_env=="np02vd":
             return ["CRP2","CRP3","CRP4","CRP5"]
         if op_env=="np02vdcoldbox":
-            return ["CRPX"]
+            return ["CRP6"]
+        if op_env=="np04hdcoldbox":
+            return ["APA0"]
         if op_env=="iceberghd" or op_env=="iceberg" or "icebergvd":
             return ["TPC-0-N","TPC-0-S"]
         return [""]
 
     def load_entry(self, file_name: str, entry: int):
         uid = (file_name, entry)
+        print(uid)
 
         if uid in self.cache:
             logging.info(f"{file_name}:{entry} already loaded. returning cached dataframe")    
@@ -157,11 +160,15 @@ class FileHandle:
         
         file_path = os.path.join(self.data_path, file_name)
         h5_file   = hdf5libs.HDF5RawDataFile(file_path)
-        
+
+        print(file_path)
+        print(h5_file)
 
         df_dict = {}
         df_dict = dfc.process_record(h5_file,(entry, 0),df_dict,MAX_WORKERS=10,ana_data_prescale=1,wvfm_data_prescale=1)
         df_dict = dfc.concatenate_dataframes(df_dict)
+
+        print(df_dict.keys())
 
         self.cache[uid] = df_dict
 
