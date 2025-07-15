@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from cruncher.datamanager import DataManager
+from justintime.cruncher.datamanager import DataManager
 import sys
 import rich
 import logging
@@ -18,7 +18,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 def cli(interactive: bool, dir_path: str) -> None:
 
-    rdm = DataManager(dir_path, 'WIB', 'HDColdboxChannelMap')
+    rdm = DataManager(dir_path, 'PD2HD')
 
     # re_app_run = re.compile(r'(.*)_run(\d*)')
 

@@ -11,6 +11,7 @@ import logging
 from .. import plot_class
 from ... plotting_functions import add_dunedaq_annotation, selection_line,waveform_tps,nothing_to_plot
 
+from dqmtools.dqmplots import *
 
 def return_obj(dash_app, engine, storage,theme):
     plot_id = "14_waveform_vs_tp_plot"
@@ -52,23 +53,35 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         
         if trigger_record and raw_data_file:
             if plot_id in storage.shown_plots:
+
                 try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                 except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
 
-                logging.info(f"Initial Time Stamp: {data.ts_min}")
-                logging.info(" ")
-                logging.info("Initial Dataframe:")
-                logging.info(data.df_tsoff)
+                #logging.info(f"Initial Time Stamp: {data.ts_min}")
+                #logging.info(" ")
+                #logging.info("Initial Dataframe:")
+                #logging.info(data.df_tsoff)
 
-                
-                if len(data.df)!=0 and len(data.df.index!=0):
-                    data.init_tp()
-                    
-                    if channel_num:
-                        
-                        return(html.Div(selection_line(partition,run,raw_data_file, trigger_record)),html.Div([graph(partition,run,raw_data_file, trigger_record,data,offset,plane,overlay_tps,val) for val in channel_num]
-                                            ))
-                            
+                if data.df_dict["trh"].size != 0:
+
+                    if len(channel_num)>0:
+
+                        #figs = []
+                        #for ch in channel_num:
+                            #fig = plot_WIBEth_waveform(df_dict=data.df_dict,
+                            #                           tpc_det_key=data.tpc_datkey,channel=ch,
+                            #                           offset=offset,overlay_tps=overlay_tps)
+                            #if fig is not None:
+                            #    figs += wrap_figure(fig,run,trigger_record,ch)
+                            #else:
+                            #    figs.append(html.H6(nothing_to_plot()))
+                        det_keys = [ key for key in data.df_dict if key.startswith('detw') and 'TPC' in key ]
+                        return(html.Div(selection_line(partition,run,raw_data_file, trigger_record)),
+                               html.Div([ wrap_figure(plot_TPC_waveform(df_dict=data.df_dict, det_keys=det_keys,channel=ch,
+                                                                        offset=offset,overlay_tps=overlay_tps),
+                                                                        run_number=run,trigger_number=trigger_record[0],channel_num=ch) for ch in channel_num]))
+#                               html.Div(figs))
+
                     else:
                         return(html.Div(html.H6("No Channel Selected")))
                 else:
@@ -76,6 +89,18 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                     
             return(original_state)
         return(html.Div())
+
+def wrap_figure(fig,run_number,trigger_number,channel_num):
+    fig.update_layout(xaxis_title="Time Ticks", yaxis_title="ADC Waveform",
+                      #height=fig_h,
+                      title_text=f"Run {run_number}: {trigger_number} - Channel {channel_num}",
+                      legend=dict(x=0,y=1),
+                      )
+
+    add_dunedaq_annotation(fig)
+    fig.update_layout(font_family="Lato", title_font_family="Lato")
+    return(html.Div([html.B(f"Waveform and TPs for channel {channel_num}"),dcc.Graph(id='graph-{}'.format(channel_num), figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]))
+
 
 def graph(partition,run,raw_data_file, trigger_record,data,offset,plane,overlay_tps,channel_num):
                    

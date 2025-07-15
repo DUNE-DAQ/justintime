@@ -15,6 +15,7 @@ import hdf5libs
 import rawdatautils.unpack.wib as protowib_unpack
 import rawdatautils.unpack.wib2 as wib_unpack
 import logging
+import dqmtools.dataframe_creator as dfc
 
 import numpy as np
 import pandas as pd
@@ -82,6 +83,8 @@ class DataManager:
                 return detchannelmaps.make_map('FiftyLChannelMap')
             case 'ICEBERGChannelMap':
                 return detchannelmaps.make_map('ICEBERGChannelMap')
+            case 'PD2VDTPCChannelMap':
+                return detchannelmaps.make_tpc_map('PD2VDTPCChannelMap')
             case _:
                 raise RuntimeError(f"Unknown channel map id '{map_name}'")
 
@@ -138,7 +141,7 @@ class DataManager:
         re_app_run = re.compile(r'(.*)_run(\d*)')
 
         # List files
-        lf = self.list_files()
+        lf = sorted(self.list_files())
 
         def extract_session_run( fname : str ):
             m = re_app_run.match(fname)
@@ -198,14 +201,30 @@ class DataManager:
 
         return trl if trl else tsl
 
+    def get_tpc_element_names(self, file_name: str) -> list:
+        file_path = os.path.join(self.data_path, file_name)
+        op_env = None
+        with h5py.File(file_path, 'r') as f:
+            op_env = f.attrs["operational_environment"]
+        if op_env is None:
+            return []
+        if op_env=="np04hd":
+            return ["APA_P02SU","APA_P02NL","APA_P01SU","APA_P01NL"]
+        if op_env=="np02vd":
+            return ["BottomCRP4","BottomCRP5"]
+        if op_env=="np02vdcoldbox":
+            return ["BottomCRP"]
+        if op_env=="iceberghd" or op_env=="iceberg" or "icebergvd":
+            return ["TPC-0-N","TPC-0-S"]
+        return []
 
-    def load_entry(self, file_name: str, entry: int) -> list:
+    def load_entry(self, file_name: str, entry: int) -> dict:
         uid = (file_name, entry)
         if uid in self.cache:
             logging.info(f"{file_name}:{entry} already loaded. returning cached dataframe")
-            en_info, tpc_df, tp_df, ta_df, tc_df = self.cache[uid]
+            df_dict = self.cache[uid]
             self.cache.move_to_end(uid, False)
-            return en_info, tpc_df, tp_df, ta_df, tc_df
+            return df_dict
 
         file_path = os.path.join(self.data_path, file_name)
         rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
@@ -258,90 +277,16 @@ class DataManager:
 
         logging.info(en_info)
 
-        wf_up = rdu.WIBFragmentUnpacker(self.ch_map)
-        wethf_up = rdu.WIBEthFragmentPandasUnpacker(self.ch_map)
-        tp_up = rdu.TPFragmentPandasUnpacker(self.ch_map)
-        ta_up = rdu.TAFragmentPandasUnpacker(self.ch_map)
-        tc_up = rdu.TCFragmentPandasUnpacker()
+        df_dict = dfc.process_record(rdf,(entry,0),{},MAX_WORKERS=10,ana_data_prescale=1,wvfm_data_prescale=1)
+        df_dict = dfc.concatenate_dataframes(df_dict)
 
-        logging.debug("Upackers created")
-
-        up = rdu.UnpackerService()
-        logging.debug("UnpackerService created")
-
-        up.add_unpacker('bde_eth', wethf_up)
-        up.add_unpacker('bde_flx', wf_up)
-        up.add_unpacker('tp', tp_up)
-        up.add_unpacker('ta', ta_up)
-        up.add_unpacker('tc', tc_up)
-
-        # up.add_unpacker('pds', daphne_up)
-        logging.debug("Upackers added")
-
-        unpacked_tr = up.unpack(rdf, entry)
-        logging.info("Unpacking completed")
-
-        # Assembling BDE dataframes
-        tpc_dfs = {}
-        fwtp_df = pd.DataFrame( columns=['ts'] )
-        tp_df = pd.DataFrame( columns=['ts'] )
-
-        if 'bde_eth' in unpacked_tr:
-            dfs = {k:v for k,v in unpacked_tr['bde_eth'].items() if not v is None}
-            # logging.debug(f"Collected {len(dfs)} non-empty DUNEWIBEth Frames")
-            tpc_dfs.update(dfs)
-        if 'bde_flx' in unpacked_tr:
-            dfs = {k:v for k,v in unpacked_tr['bde_flx'].items() if not v is None}
-            # logging.debug(f"Collected {len(dfs)} non-empty DUNEWIB Frames")
-            tpc_dfs.update(dfs)
-
-        idx = pd.Index([], dtype='uint64')
-        for df in tpc_dfs.values():
-            idx = idx.union(df.index)
-
-
-        tpc_df = pd.DataFrame(index=idx, dtype='uint16')
-        for df in tpc_dfs.values():
-            tpc_df = tpc_df.join(df)
-        tpc_df = tpc_df.reindex(sorted(tpc_df.columns), axis=1)
-
-        # print(f"TPC-BDE adcs dataframe assembled {len(tpc_df)} samples x {len(tpc_df.columns)} chans from sources {list(tpc_dfs)}")
-
-        # Assembling TPC-TP dataframes
-        if 'tp' in unpacked_tr:
-            logging.debug("Assembling TPs")
-            tp_df = pd.concat(unpacked_tr['tp'].values())
-            tp_df = tp_df.sort_values(by=['time_start', 'channel'])
-            tp_df.drop_duplicates()
-            logging.debug(f"TPs dataframe assembled {len(tp_df)}")
-        else:
-            tp_df = up.get_unpacker('tp').empty()
-
-        # Assembling TPC-TP dataframes
-        if 'ta' in unpacked_tr:
-            logging.debug("Assembling TAs")
-            ta_df = pd.concat(unpacked_tr['ta'].values())
-            ta_df = ta_df.sort_values(by=['time_start', 'channel_start'])
-            # ta_df.drop_duplicates()
-            logging.debug(f"TAs dataframe assembled {len(ta_df)}")
-        else:
-            ta_df = up.get_unpacker('ta').empty()
-
-
-        # Assembling TPC-TP dataframes
-        if 'tc' in unpacked_tr:
-            logging.debug("Assembling TCs")
-            tc_df = pd.concat(unpacked_tr['tc'].values())
-            tc_df = tc_df.sort_values(by=['time_start'])
-            # tc_df.drop_duplicates()
-            logging.debug(f"TCs dataframe assembled {len(tc_df)}")
-        else:
-            tc_df = up.get_unpacker('tc').empty()
-
-        self.cache[uid] = (en_info, tpc_df, tp_df, ta_df, tc_df)
+        self.cache[uid] = df_dict
         if len(self.cache) > self.max_cache_size:
             old_uid, _ = self.cache.popitem(False)
             logging.info(f"Removing {old_uid[0]}:{old_uid[1]} from cache")
 
-        return en_info, tpc_df, tp_df, ta_df, tc_df
+        return df_dict
 
+
+#class DataHandler(DataManager):
+    

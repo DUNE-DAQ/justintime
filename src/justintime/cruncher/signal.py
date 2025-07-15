@@ -29,7 +29,7 @@ def calc_fft_fft_sq(df: pd.DataFrame) -> Tuple[pd.DataFrame]:
     """
     df_fft = df.apply(np.fft.fft)
     df_fft_sq = np.abs(df_fft) ** 2
-    freq = np.fft.fftfreq(df.index.size, 0.5e-6)
+    freq = np.fft.fftfreq(df.index.size, 0.512e-6)
     df_fft['Freq'] = freq
     df_fft_sq['Freq'] = freq
     # Cleanup fft2 for plotting
@@ -50,7 +50,7 @@ def calc_fft(df: pd.DataFrame) -> pd.DataFrame:
     
     """
     df_fft = df.apply(np.fft.fft)
-    freq = np.fft.fftfreq(df.index.size, 0.5e-6)
+    freq = np.fft.fftfreq(df.index.size, 0.512e-6)
     df_fft['Freq'] = freq
     return df_fft
     
@@ -79,7 +79,7 @@ def calc_fft_sum_by_plane(df: pd.DataFrame, planes: dict) -> pd.DataFrame:
 
     df_fft = df_sums.apply(np.fft.fft)
     df_fft2 = np.abs(df_fft) ** 2
-    freq = np.fft.fftfreq(df_sums.index.size, 0.5e-6)
+    freq = np.fft.fftfreq(df_sums.index.size, 0.512e-6)
     df_fft2['Freq'] = freq
     df_fft2 = df_fft2[df_fft2['Freq']>0]
     df_fft2 = df_fft2.set_index('Freq')
