@@ -37,7 +37,7 @@ def init_callbacks(dash_app, engine):
 
         if not stored_value:
             return []
-        options = [{'label':str(n), 'value':str(n)} for n in stored_value]
+        options = [{'label':str(n), 'value':str(n)} for n in sorted(stored_value, reverse=True)]
         return(options)
         
     @dash_app.callback(

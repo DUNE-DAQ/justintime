@@ -32,5 +32,5 @@ def init_callbacks(dash_app, engine):
     def update_trigger_record_select(raw_data_file):
         if not raw_data_file:
             return []
-        tr_nums = [{'label':str(n), 'value':str(n)} for n in engine.get_trigger_record_list(raw_data_file)]
+        tr_nums = [{'label':str(n), 'value':str(n)} for n in sorted(engine.get_trigger_record_list(raw_data_file), reverse=True)]
         return(tr_nums)

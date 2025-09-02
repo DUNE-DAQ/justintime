@@ -53,16 +53,19 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                     
                 logging.info(f"Trigger Time Stamp: {data.get_trigger_ts()}")
                 logging.info(" ")
-                logging.info("Initial Dataframe:")
-                logging.info(data.df_dict)
+                # logging.info("Initial Dataframe:")
+                # logging.info(data.df_dict)
 
                 #if data.df_dict["trh"].size == 0:
                 #
                 #     return(html.Div(html.H6(nothing_to_plot())))
                     
                 try: 
+                    print("aAAAA")
                     mean1, mean2, mean3 = data.get_pds_adcs_per_link("adc_mean")
+                    print("vvvvv")
                     stdv1, stdv2, stdv3 = data.get_pds_adcs_per_link("adc_rms")
+                    print("cccccc")
                     chns1, chns2, chns3 = data.get_pds_adcs_per_link("daphne_chan")
                     #srcs1, srcs2, srcs3 = data.get_pds_adcs_per_link("src_id")
                 except KeyError:
@@ -74,19 +77,19 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 print(stdv1)
 
                 fig_std.add_trace(
-                    go.Scattergl(x=chns1, y=mean1, mode='markers',marker=dict(color="darkblue"), name="104"), #name=f"Run {data.run}: {data.trigger}"),
+                    go.Scattergl(x=chns1, y=mean1, mode='markers',marker=dict(color="darkblue"), name="Streaming (mean)"), #name=f"Run {data.run}: {data.trigger}"),
                     row=1, col=1
                 )
 
-                fig_std.add_trace(
-                    go.Scattergl(x=chns2, y=mean2, mode='markers',marker=dict(color="darkred"), name="105"), #name=f"Run {data.run}: {data.trigger}"),
-                    row=1, col=1
-                )
+                # fig_std.add_trace(
+                #     go.Scattergl(x=chns2, y=mean2, mode='markers',marker=dict(color="darkred"), name="105"), #name=f"Run {data.run}: {data.trigger}"),
+                #     row=1, col=1
+                # )
 
-                fig_std.add_trace(
-                    go.Scattergl(x=chns3, y=mean3, mode='markers',marker=dict(color="darkgreen"), name="107"), #name=f"Run {data.run}: {data.trigger}"),
-                    row=1, col=1
-                )
+                # fig_std.add_trace(
+                #     go.Scattergl(x=chns3, y=mean3, mode='markers',marker=dict(color="darkgreen"), name="107"), #name=f"Run {data.run}: {data.trigger}"),
+                #     row=1, col=1
+                # )
 
                 fig_std.update_layout(xaxis_title="Channels",
                     legend_title="Readout endpoint",
@@ -99,19 +102,19 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                                 ))
                 
                 fig_std.add_trace(
-                    go.Scattergl(x=chns1, y=stdv1, mode='markers',marker=dict(color="darkblue"), name=""), #name=f"Run {data.run}: {data.trigger}"),
+                    go.Scattergl(x=chns1, y=stdv1, mode='markers',marker=dict(color="darkblue"), name="Streaming (rms)"), #name=f"Run {data.run}: {data.trigger}"),
                     row=2, col=1
                 )
 
-                fig_std.add_trace(
-                    go.Scattergl(x=chns2, y=stdv2, mode='markers',marker=dict(color="darkred"), name=""), #name=f"Run {data.run}: {data.trigger}"),
-                    row=2, col=1
-                )
+                # fig_std.add_trace(
+                #     go.Scattergl(x=chns2, y=stdv2, mode='markers',marker=dict(color="darkred"), name=""), #name=f"Run {data.run}: {data.trigger}"),
+                #     row=2, col=1
+                # )
 
-                fig_std.add_trace(
-                    go.Scattergl(x=chns3, y=stdv3, mode='markers',marker=dict(color="darkgreen"), name=""), #name=f"Run {data.run}: {data.trigger}"),
-                    row=2, col=1
-                )
+                # fig_std.add_trace(
+                #     go.Scattergl(x=chns3, y=stdv3, mode='markers',marker=dict(color="darkgreen"), name=""), #name=f"Run {data.run}: {data.trigger}"),
+                #     row=2, col=1
+                # )
 
                 fig_std.update_yaxes(title_text="Mean ADCs", title_font=dict(size=22), row=1, col=1)
                 fig_std.update_yaxes(title_text="STDev ADCs", title_font=dict(size=22), row=2, col=1)

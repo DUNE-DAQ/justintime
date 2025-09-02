@@ -30,8 +30,8 @@ def return_obj(dash_app, engine, storage,theme):
     plot.add_ctrl("partition_select_ctrl")
     plot.add_ctrl("run_select_ctrl")
     plot.add_ctrl("06_trigger_record_select_ctrl")
-    plot.add_ctrl("22_tests_selection_ctrl")
-    plot.add_ctrl("91_run_tests_button_ctrl")
+    # plot.add_ctrl("22_tests_selection_ctrl")
+    plot.add_ctrl("99_read_record_ctrl")
     
 
     init_callbacks(dash_app, storage, plot_id,theme)
@@ -42,17 +42,17 @@ def init_callbacks(dash_app, storage, plot_id,theme):
     @dash_app.callback(
         Output(plot_id, "children"),
         #Input("90_plot_button_ctrl", "n_clicks"),
-        Input("91_run_tests_button_ctrl", "n_clicks"),
+        Input("99_read_record_ctrl", "n_clicks"),
         State('07_refresh_ctrl', "value"),
         State('trigger_record_select_ctrl', "value"),
         State("partition_select_ctrl","value"),
         State("run_select_ctrl","value"),
         State('file_select_ctrl', "value"),
-        State('tests_selection_item_comp', "value"),
+        # State('tests_selection_item_comp', "value"),
      
         State(plot_id, "children")
     )
-    def plot_home_info(n_clicks,refresh, trigger_record,partition,run,raw_data_file ,original_state, tests_selection):
+    def plot_home_info(n_clicks, refresh, trigger_record,partition,run,raw_data_file ,original_state):
 
         load_figure_template(theme)
 
@@ -71,6 +71,102 @@ def init_callbacks(dash_app, storage, plot_id,theme):
 
                         trigger_dts = data.df_dict["trh"].trigger_timestamp_dts
                         assert trigger_dts.size == 1, "More than one trigger record for selected"
+
+                        #trigger info table
+                        tr_header = data.df_dict["trh"].iloc[0]
+                        print(tr_header)
+                        run, trigger, sequence = tr_header.name
+
+                        tr_table=pd.DataFrame({
+                           'TR Attribute': [
+                               'Run',
+                               'Trigger number',
+                               'Trigger sequence',
+                               'Trigger timestamp (dts ticks)', 
+                               'Trigger timestamp (sec from epoc)',
+                               'Trigger date',
+                               'Number of fragments',
+                               'Number of requested components',
+                               'Trigger type',
+                               'Total size (MB)'
+                           ],
+                           'Value': [
+                               run,
+                               trigger,
+                               sequence,
+                               tr_header.trigger_timestamp_dts,
+                               tr_header.trigger_timestamp_dts*16/1e9,
+                               tr_header.trigger_time,
+                               tr_header.n_fragments,
+                               tr_header.n_requested_components,
+                               ', '.join([b.name for b in tr_header.trigger_type_bits]) ,
+                               tr_header.total_size_bytes/1e6
+                           ]
+                        })
+
+                        import re
+                        det_df = [k for k in data.df_dict if 'detd' in k]
+                        exp = re.compile(r"^[^_]+_k?([^_]+)_([^_]+)_k?([^_]+)$")
+
+                        tr_frag_info = {exp.match(n).groups(): data.df_dict[n] for n in det_df}
+                        # data.df_dict['detd_kVD_TopTPC_kTDEEth'].index.get_level_values('src_id')
+                        # data.df_dict['detd_kVD_TopTPC_kTDEth'].element.unique()
+
+                        mod = []
+                        det = []
+                        fmt = []
+                        els = []
+                        src_ids = []
+                        for n in det_df:
+                            m, d, f = exp.match(n).groups()
+                            el = data.df_dict[n].element.unique() if 'element' in data.df_dict[n].columns else []
+                            sr = data.df_dict[n].index.get_level_values('src_id').unique()
+
+
+                            mod.append(m)
+                            det.append(d)
+                            fmt.append(f)
+                            els.append(', '.join([str(e) for e in sorted(el)]))
+                            src_ids.append(', '.join([str(s) for s in sorted(sr)]))
+
+                        frag_table = pd.DataFrame(
+                             {
+                                  'Module': mod,
+                                  'Detector': det,
+                                  'Data Format': fmt,
+                                  'Elements': els,
+                                  'Source Ids': src_ids,
+                             }
+                        )
+
+                        children=([
+                             dash_table.DataTable(
+                                id='table',
+                                columns=[{"name": i, "id": i} for i in tr_table.columns],
+                                data=tr_table.to_dict('records'),
+                                style_header={'textAlign': 'left'},
+                                style_cell={'textAlign': 'left'}
+                                ),
+                                html.Br(),
+                             dash_table.DataTable(
+                                id='frag_table',
+                                columns=[{"name": i, "id": i} for i in frag_table.columns],
+                                data=frag_table.to_dict('records'),
+                                style_header={'textAlign': 'left'},
+                                style_cell={'textAlign': 'left'},
+                                style_data={
+                                    'whiteSpace': 'normal',
+                                    'height': 'auto',
+                                },
+                                ),         
+                            ])
+                
+                        return(html.Div([
+                                selection_line(partition, run, raw_data_file, trigger_record),
+                                #html.Hr(),
+                                html.Div(children)
+                                ]))
+                        
                         
                         trigger_dts = trigger_dts.iloc[0]
                         tpc_det_name = storage.engine.det_name
@@ -131,33 +227,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                                          'font-family':'Open Sans'}
                             ]
 
-                        #trigger info table
-#                        table=pd.DataFrame({
-#                            'TR Attribute': [
-#                                'Run',
-#                                'Trigger number',
-#                                'Trigger sequence',
-#                                'Trigger timestamp (dts ticks)', 
-#                                'Trigger timestamp (sec from epoc)',
-#                                'Trigger date',
-#                                'Number of fragments',
-#                                'Number of requested components',
-#                                'Trigger type',
-#                                'Total size (MB)'
-#                            ],
-#                            'Value': [
-#                                data.df_dict["trh"]["run"].iloc[0],
-#                                data.df_dict["trh"]["trigger"].iloc[0],
-#                                data.df_dict["trh"]["sequence"].iloc[0],
-#                                data.df_dict["trh"]["trigger_timestamp_dts"].iloc[0],
-#                                data.df_dict["trh"]["trigger_timestamp_dts"].iloc[0]*16/1e9,
-#                                data.df_dict["trh"]["trigger_time"].iloc[0],
-#                                data.df_dict["trh"]["n_fragments"].iloc[0],
-#                                data.df_dict["trh"]["n_requested_components"].iloc[0],
-#                                data.df_dict["trh"]["trigger_type"].iloc[0],
-#                                data.df_dict["trh"]["total_size_bytes"].iloc[0]/1e6
-#                            ]
-#                        })
+
 
                         table=data.df_dict["trh"]
                         children=([dash_table.DataTable(
@@ -203,4 +273,6 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                     else:
                         return(html.Div([html.H6(nothing_to_plot())]))
             return(original_state)
-        return(html.Div())
+        return(html.Div(
+            html.H4("Select Trigger Record to display"),
+        ))

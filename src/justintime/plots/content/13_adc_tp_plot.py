@@ -79,7 +79,7 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
         State(plot_id, "children"),
     )
 
-    def plot_trd_graph(n_clicks, refresh,apa_name,trigger_record, raw_data_file, partition, run, adcmap_selection, colorscale, tr_color_range, static_image, offset, overlay_tps,orientation,height,original_state):
+    def plot_trd_graph(n_clicks, refresh, apa_name, trigger_record, raw_data_file, partition, run, adcmap_selection, colorscale, tr_color_range, static_image, offset, overlay_tps, orientation, height, original_state):
         
         load_figure_template(theme)
         orientation = orientation
@@ -94,11 +94,16 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                     logging.debug(f"Making plot with adcmap_selection {adcmap_selection}, {apa_name}, overlay_tps {overlay_tps}")
                     if 'Z' in adcmap_selection:
                         logging.info("Z Plane selected")
-                        fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
-                                               plane=2, ele=apa_name,
+                        fig = plot_TPC_adc_map(df_dict=data.df_dict, 
+                                               det_keys=det_keys,
+                                               plane=2, 
+                                               ele=apa_name,
                                                make_static=static_image,
                                                make_tp_overlay=("tp_overlay" in overlay_tps),
-                                               orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
+                                               orientation=orientation, 
+                                               colorscale=colorscale,
+                                               color_range=tr_color_range,
+                                               )
                         if fig is not None:
                             children += formate_figure(fig,height,"Z")
                         else:
@@ -106,10 +111,14 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                     if 'V' in adcmap_selection:
                         logging.info("V Plane selected")
                         fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
-                                               plane=1, ele=apa_name,
+                                               plane=1,
+                                               ele=apa_name,
                                                make_static=static_image,
                                                make_tp_overlay=overlay_tps,
-                                               orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
+                                               orientation=orientation,
+                                               colorscale=colorscale,
+                                               color_range=tr_color_range,
+                                               )
                         if fig is not None:
                             children += formate_figure(fig,height,"V")
                         else:

@@ -1,0 +1,15 @@
+component_list = [
+    '01_home_page',
+    '02_mean_std_page',
+    '03_adc_tp_overlay_page',
+    '04_waveform_vs_tp_page',
+    '05_tp_display_page',
+    '06_fft_page',
+    # '07_fft_phase_page',
+    # '14_fft_per_channel_page',
+    '17_pds_stats_page',
+    # '18_pds_baseline_per_channel',
+    # '19_pds_rms_per_channel',
+    # '20_pds_waveforms_per_channel',
+    # '22_pds_trigger_map',
+]

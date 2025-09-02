@@ -77,8 +77,9 @@ class TriggerRecordData:
         self.seq        = indexies[2]
 
         self.tpc_datkey     = f"detd_k{self.engine.det_name}_kWIBEth"
-        self.pds_datkey     = f"detd_kHD_PDS_kDAPHNE"
-        self.pdss_datkey    = f"detd_kHD_PDS_kDAPHNEStream"
+        # FIXME: Hardocded HD formats!
+        self.pds_datkey     = f"detd_kVD_MembranePDS_kDAPHNE"
+        self.pdss_datkey    = f"detd_kVD_CathodePDS_kDAPHNEStream"
         
 
         logging.info(f"Trigger timestamp (ticks): {self.get_trigger_ts()}")
@@ -91,7 +92,7 @@ class TriggerRecordData:
         return dts_to_datetime(self.get_trigger_ts()).strftime('%b-%d-%Y, %H:%M:%S')
 
     def get_df(self, data_key):
-        return self.df_dict[self.data_key]
+        return self.df_dict[data_key]
 
     def get_adcs_per_planes(self, key=None):
         """
@@ -110,12 +111,19 @@ class TriggerRecordData:
                     self.df_dict[self.tpc_datkey].query("plane == 2")[key])
         
     def get_pds_adcs_per_link(self, key=None):
+
+        print(self.df_dict.keys())
+        print(f"{self.pdss_datkey} in dataframes", self.pdss_datkey in self.df_dict)
+        print(self.df_dict[self.pdss_datkey])
         
         if key is None:
             return (self.df_dict[self.pdss_datkey],
                     self.df_dict[self.pdss_datkey],
                     self.df_dict[self.pdss_datkey])
         else:
-            return (self.df_dict[self.pdss_datkey].query("src_id < 4")[key],
-                    self.df_dict[self.pdss_datkey].query("src_id in [4, 5, 6, 8]")[key],
-                    self.df_dict[self.pdss_datkey].query("src_id in [7, 9]")[key])
+            # return (self.df_dict[self.pdss_datkey].query("src_id < 4")[key],
+            #         self.df_dict[self.pdss_datkey].query("src_id in [4, 5, 6, 8]")[key],
+            #         self.df_dict[self.pdss_datkey].query("src_id in [7, 9]")[key])
+            return (self.df_dict[self.pdss_datkey][key],
+                    self.df_dict[self.pdss_datkey][key],
+                    self.df_dict[self.pdss_datkey][key])

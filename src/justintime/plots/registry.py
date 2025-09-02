@@ -1,0 +1,16 @@
+component_list = [
+    '01_home_plot',
+    '02_tp_display_plot',
+    '04_mean_plot',
+    '05_std_plot',
+    '06_fft_plot',
+    '07_fft_phase_plot',
+    '13_adc_tp_plot',
+    '14_waveform_vs_tp_plot',
+    '15_fft_per_channel_plot',
+    '17_pds_stats_plot',
+    '18_pds_baseline_per_channel',
+    '19_pds_rms_per_channel',
+    '20_pds_waveforms_per_channel',
+    '22_pds_trigger_map',
+]

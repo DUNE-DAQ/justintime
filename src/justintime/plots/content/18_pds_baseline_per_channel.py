@@ -37,7 +37,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State(plot_id, "children")
     )
 
-    def plot_pds_baseline_per_channel_grap(n_clicks,refresh, trigger_record,partition,run,raw_data_file,original_state):
+    def plot_pds_baseline_per_channel_grap(n_clicks, refresh, trigger_record,partition,run,raw_data_file,original_state):
 
         load_figure_template("spacelab")
         if trigger_record and raw_data_file:
@@ -51,10 +51,10 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 logging.info("Initial Dataframe:")
                 logging.info(data.df_dict) 
 
-                df_fs, index = dfc.select_record(data.df_dict["detw_kHD_PDS_kDAPHNEStream"])
+                df_fs, index = dfc.select_record(data.df_dict["detw_kVD_MembranePDS_kDAPHNE"])
                 df_fs = df_fs.reset_index()
 
-                df_st, index = dfc.select_record(data.df_dict["detw_kHD_PDS_kDAPHNE"])
+                df_st, index = dfc.select_record(data.df_dict["detw_kVD_CathodePDS_kDAPHNEStream"])
                 df_st = df_st.reset_index()
 
                 df_fs = df_fs.filter(items=['src_id', 'channel', 'adcs'])
