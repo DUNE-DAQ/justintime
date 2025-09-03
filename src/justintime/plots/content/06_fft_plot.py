@@ -71,72 +71,30 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 print(df)
 
 
-                fft_0 = df[df.plane == 0].fft_mag.mean()
-                fft_1 = df[df.plane == 1].fft_mag.mean()
-                fft_2 = df[df.plane == 2].fft_mag.mean()
+                df_fft = pd.DataFrame(df.groupby('plane').fft_mag.mean()).T.explode([0,1,2]).reset_index()
+                df_fft['freq'] = freqs
 
-                # import IPython
-                # IPython.embed(colors='neutral')
+                title=f"FFT : Run {run}: {trigger_record}" 
 
-
-                # logging.info(f"Initial Time Stamp: {data.ts_min}")
-                # logging.info(" ")
-                # logging.info("Initial Dataframe:")
-                # logging.info(data.df_tsoff)
-                # if len(data.df)!=0 and len(data.df.index!=0):
-                    
-                #     data.init_fft2()
-
-                #     logging.info("FFT Z-Plane")
-                #     logging.info(data.df_Z_plane)
-                #     logging.info("FFT V-Plane")
-                #     logging.info(fft_0)
-                #     logging.info("FFT U-Plane")
-                #     logging.info(data.df_U_plane)
-
-                title_U=f"FFT U-plane: Run {run}: {trigger_record}" 
-                title_V=f"FFT V-plane: Run {run}: {trigger_record}" 
-                title_Z=f"FFT Z-plane: Run {run}: {trigger_record}" 
-                # title_V=f"FFT V-plane: Run {data.info['run_number']}: {data.info['trigger_number']}" 
-                # title_Z=f"FFT Z-plane: Run {data.info['run_number']}: {data.info['trigger_number']}" 
-
-                fig_U = px.line(
-                    x=freqs, 
-                    y=fft_0, 
+                fig = px.line(
+                    df_fft,
+                    x='freq', 
+                    y=[0,1,2], 
                     log_y=True, 
-                    title=title_U, 
+                    title=title, 
                     labels={
-                     "y": "Magnitude",
-                     "x": "Frequency (Hz)",
+                     "value": "Magnitude",
+                     "freq": "Frequency (Hz)",
                     },
                  )
-                add_dunedaq_annotation(fig_U)
-                fig_V = px.line(x=freqs, y=fft_1, log_y=True, title=title_V,
-                    labels={
-                     "y": "Magnitude",
-                     "x": "Frequency (Hz)",
-                    },)
-                add_dunedaq_annotation(fig_V)
-                fig_Z = px.line(x=freqs, y=fft_2, log_y=True, title=title_Z,
-                    labels={
-                     "y": "Magnitude",
-                     "x": "Frequency (Hz)",
-                    },)
-                add_dunedaq_annotation(fig_Z)
-                fig_U.update_layout(font_family="Lato", title_font_family="Lato")
-                fig_V.update_layout(font_family="Lato", title_font_family="Lato")
-                fig_Z.update_layout(font_family="Lato", title_font_family="Lato")
+                add_dunedaq_annotation(fig)
+
+                fig.update_layout(font_family="Lato", title_font_family="Lato")
                 return(html.Div([
                     selection_line(partition,run,raw_data_file, trigger_record),
-                    html.B("FFT U-Plane"),
-                    #html.Hr(),
-                    dcc.Graph(figure=fig_U),
-                    html.B("FFT V-Plane"),
-                    #html.Hr(),
-                    dcc.Graph(figure=fig_V),
-                    html.B("FFT Z-Plane"),
-                    #html.Hr(),
-                    dcc.Graph(figure=fig_Z)
+                    html.B("FFT by plane"),
+                    dcc.Graph(figure=fig),
+
                 ]))
             else:
                 return(html.Div(html.H6(nothing_to_plot())))
