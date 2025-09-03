@@ -13,11 +13,8 @@ import logging
 
 def add_dunedaq_annotation(figure):
     figure.add_annotation(dict(font=dict(color="black",size=12),
-        #x=x_loc,
-        # x=1,
-        # y=-0.20,
         x=1,
-        y=1.14,
+        y=1.12,
         showarrow=False,
         align="right",
         text='Powered by DUNE-DAQ',
@@ -25,6 +22,20 @@ def add_dunedaq_annotation(figure):
         xref="paper",
         yref="paper"
         ))
+
+def add_runinfo_annotation(figure, op_env, run, tr_num):
+    figure.add_annotation(dict(font=dict(color="black",size=12),
+        x=1,
+        y=1.18,
+        showarrow=False,
+        align="right",
+        text=f'<b>{op_env}</b>, Run <b>{run}</b>, Trigger Record <b>{tr_num}</b>',
+        textangle=0,
+        xref="paper",
+        yref="paper"
+        ))
+
+
 
 def selection_line(partition,run,raw_data_file, trigger_record):
     return(html.Div([

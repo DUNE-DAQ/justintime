@@ -9,7 +9,7 @@ import numpy.fft as fft
 import rich
 import logging
 import pandas as pd
-from ... plotting_functions import add_dunedaq_annotation, selection_line, nothing_to_plot
+from ... plotting_functions import add_dunedaq_annotation, add_runinfo_annotation, selection_line, nothing_to_plot
 from .. import plot_class
 
 
@@ -38,7 +38,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State('file_select_ctrl', "value"),
         State(plot_id, "children"),
     )
-    def plot_fft_graph(n_clicks, refresh, partition, run, trigger_record, raw_data_file, original_state):
+    def plot_fft_graph(n_clicks, refresh, op_env, run, trigger_record, raw_data_file, original_state):
 
         load_figure_template(theme)
         if trigger_record and raw_data_file:
@@ -77,7 +77,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
 
 
                 children = [
-                    selection_line(partition,run,raw_data_file, trigger_record),
+                    selection_line(op_env,run,raw_data_file, trigger_record),
                 ]
                 for elem_id, df in df_elems.items():
                     freqs = fft.rfftfreq(len(df.iloc[0].adcs), 512e-9)
@@ -104,6 +104,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         },
                     )
                     add_dunedaq_annotation(fig)
+                    add_runinfo_annotation(fig, op_env, run, trigger_record)
                     fig.update_layout(font_family="Lato", title_font_family="Lato")
 
                     children += [

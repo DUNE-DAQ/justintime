@@ -8,7 +8,7 @@ import rich
 import logging
 import numpy as np
 from .. import plot_class
-from ... plotting_functions import add_dunedaq_annotation, selection_line, tp_hist_for_mean_std,nothing_to_plot
+from ... plotting_functions import add_dunedaq_annotation, add_runinfo_annotation, selection_line, tp_hist_for_mean_std,nothing_to_plot
 
 from dqmtools.dqmplots import *
 
@@ -90,6 +90,8 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         # showlegend=False
                     )
                     add_dunedaq_annotation(fig_std)
+                    add_runinfo_annotation(fig_std, partition, run, trigger_record)
+
                     fig_std.update_layout(font_family="Lato", title_font_family="Lato")
                     if theme=="flatly":
                         fig_std.update_layout(plot_bgcolor='lightgrey')

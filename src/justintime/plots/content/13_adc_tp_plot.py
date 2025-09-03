@@ -9,7 +9,7 @@ import rich
 import pandas as pd
 import logging
 from .. import plot_class
-from ... plotting_functions import add_dunedaq_annotation, selection_line, make_static_img, nothing_to_plot, make_tp_plot,make_tp_overlay, make_ta_overlay
+from ... plotting_functions import add_dunedaq_annotation, add_runinfo_annotation, selection_line, make_static_img, nothing_to_plot, make_tp_plot,make_tp_overlay, make_ta_overlay
 
 from dqmtools.dqmplots import *
 
@@ -37,13 +37,15 @@ def return_obj(dash_app, engine, storage,theme):
     return(plot)
 
 
-def formate_figure(fig, height, plane_id):
+def format_figure(fig, height, plane_id, op_env, run, trigger_record):
     fig.update_layout(
         height=height,
         showlegend=True
     )
 
     add_dunedaq_annotation(fig)
+    add_runinfo_annotation(fig, op_env, run, trigger_record)
+
     fig.update_layout(font_family="Lato", title_font_family="Lato")
 
     fig.update_layout(legend=dict(yanchor="top", y=0.01, xanchor="left", x=1))
@@ -105,7 +107,7 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                                                color_range=tr_color_range,
                                                )
                         if fig is not None:
-                            children += formate_figure(fig,height,"Z")
+                            children += format_figure(fig,height,"Z", partition, run, trigger_record)
                         else:
                             children += html.H6(nothing_to_plot())
                     if 'V' in adcmap_selection:
@@ -120,7 +122,7 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                                                color_range=tr_color_range,
                                                )
                         if fig is not None:
-                            children += formate_figure(fig,height,"V")
+                            children += format_figure(fig,height,"V", partition, run, trigger_record)
                         else:
                             children += html.H6(nothing_to_plot())
                     if 'U' in adcmap_selection:
@@ -131,7 +133,7 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                                                make_tp_overlay=overlay_tps,
                                                orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
-                            children += formate_figure(fig,height,"U")
+                            children += format_figure(fig,height,"U", partition, run, trigger_record)
                         else:
                             children += html.H6(nothing_to_plot())
 

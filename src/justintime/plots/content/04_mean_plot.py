@@ -9,7 +9,7 @@ import numpy as np
 import rich
 import logging
 
-from ... plotting_functions import add_dunedaq_annotation, selection_line,nothing_to_plot,tp_hist_for_mean_std
+from ... plotting_functions import add_dunedaq_annotation, add_runinfo_annotation, selection_line,nothing_to_plot,tp_hist_for_mean_std
 from .. import plot_class
 
 from dqmtools.dqmplots import *
@@ -40,7 +40,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State('file_select_ctrl', "value"),
         State(plot_id, "children")
     )
-    def plot_mean_graph(n_clicks,refresh, trigger_record,partition,run,raw_data_file,original_state):
+    def plot_mean_graph(n_clicks,refresh, trigger_record, partition,run,raw_data_file,original_state):
 
         load_figure_template(theme)
         if trigger_record and raw_data_file:
@@ -91,6 +91,8 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                             # showlegend=False
                         )
                         add_dunedaq_annotation(fig_mean)
+                        add_runinfo_annotation(fig_mean, partition, run, trigger_record)
+
                         fig_mean.update_layout(font_family="Lato", title_font_family="Lato")
                         if theme=="flatly":
                             fig_mean.update_layout(plot_bgcolor='lightgrey')

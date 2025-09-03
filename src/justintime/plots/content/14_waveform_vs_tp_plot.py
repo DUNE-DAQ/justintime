@@ -9,7 +9,7 @@ import rich
 import pandas as pd
 import logging
 from .. import plot_class
-from ... plotting_functions import add_dunedaq_annotation, selection_line,waveform_tps,nothing_to_plot
+from ... plotting_functions import add_dunedaq_annotation, add_runinfo_annotation, selection_line,waveform_tps,nothing_to_plot
 
 from dqmtools.dqmplots import *
 
@@ -79,7 +79,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         return(html.Div(selection_line(partition,run,raw_data_file, trigger_record)),
                                html.Div([ wrap_figure(plot_TPC_waveform(df_dict=data.df_dict, det_keys=det_keys,channel=ch,
                                                                         offset=offset,overlay_tps=overlay_tps),
-                                                                        run_number=run,trigger_number=trigger_record[0],channel_num=ch) for ch in channel_num]))
+                                                                        op_env=partition ,run_number=run,trigger_number=trigger_record[0],channel_num=ch) for ch in channel_num]))
 #                               html.Div(figs))
 
                     else:
@@ -90,7 +90,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
             return(original_state)
         return(html.Div())
 
-def wrap_figure(fig,run_number,trigger_number,channel_num):
+def wrap_figure(fig, op_env, run_number,trigger_number,channel_num):
     fig.update_layout(xaxis_title="Time Ticks", yaxis_title="ADC Waveform",
                       #height=fig_h,
                       title_text=f"Run {run_number}: {trigger_number} - Channel {channel_num}",
@@ -98,6 +98,7 @@ def wrap_figure(fig,run_number,trigger_number,channel_num):
                       )
 
     add_dunedaq_annotation(fig)
+    add_runinfo_annotation(fig, op_env, run_number, trigger_number)
     fig.update_layout(font_family="Lato", title_font_family="Lato")
     return(html.Div([html.B(f"Waveform and TPs for channel {channel_num}"),dcc.Graph(id='graph-{}'.format(channel_num), figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]))
 
