@@ -12,6 +12,7 @@ dependencies = [
 	     "dash",
 	     "dash_daq",
 	     "dash-bootstrap-components",
+	     "dqmtools",
 	     "gunicorn>=20.1.0",
 	     "numpy>=1.23.0",
 	     "pandas>=1.4.3",
