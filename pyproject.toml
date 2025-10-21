@@ -37,7 +37,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-v --tb=short --cov=daq_assettools --cov=src/daq_assettools tests/"  # omitted --cov-report=html to avoid suppressing table to stdout
+addopts = "-v --tb=short --cov=justintime --cov=src/justintime tests/"  # omitted --cov-report=html to avoid suppressing table to stdout
 
 [tool.coverage.run]
 source = ["justintime"]
