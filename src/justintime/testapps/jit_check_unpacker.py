@@ -18,7 +18,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-p', '--plot', type=str, default=None)
 @click.option('-o', '--tr-offset', type=int, default=0)
 @click.option('-n', '--num-trs', type=int, default=1)
-def main(rawfile, interactive, plot, tr_offset, num_trs):
+def main_base(rawfile, interactive, plot, tr_offset, num_trs):
 
 
     wf_up = rdu.WIBFragmentUnpacker('PD2HD')
@@ -149,14 +149,16 @@ def main(rawfile, interactive, plot, tr_offset, num_trs):
         import IPython
         IPython.embed(colors='neutral')
 
-if __name__ == "__main__":
-        
-	FORMAT = "%(message)s"
-	logging.basicConfig(
+def main():
+    FORMAT = "%(message)s"
+    logging.basicConfig(
     	level="INFO",
         format=FORMAT,
         datefmt="[%X]",
         handlers=[RichHandler()]
-	)
+    )
+    main_base()
 
-	main()
+
+if __name__ == "__main__":
+    main()

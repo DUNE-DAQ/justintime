@@ -36,6 +36,11 @@ dev = [
     "pytest-cov",
 ]
 
+[project.scripts]
+check_scan_dir = "justintime.testapps.check_scan_dir:main"
+jit_check_datamanager = "justintime.testapps.jit_check_datamanager:main"
+jit_check_unpacker = "justintime.testapps.jit_check_unpacker:main"
+
 [tool.pytest.ini_options]
 addopts = "-v --tb=short --cov=justintime --cov=src/justintime tests/"  # omitted --cov-report=html to avoid suppressing table to stdout
 

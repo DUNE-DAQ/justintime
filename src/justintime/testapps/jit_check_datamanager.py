@@ -74,9 +74,7 @@ def cli(channel_map_id: str, entry: int, show: bool, interactive: bool, file_pat
         import IPython
         IPython.embed(colors="neutral")
 
-
-
-if __name__ == "__main__":
+def main():
     from rich.logging import RichHandler
 
     logging.basicConfig(
@@ -87,3 +85,6 @@ if __name__ == "__main__":
     )
 
     cli()
+
+if __name__ == "__main__":
+    main()
