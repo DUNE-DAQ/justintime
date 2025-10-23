@@ -41,7 +41,7 @@ addopts = "-v --tb=short --cov=justintime --cov=src/justintime tests/"  # omitte
 
 [tool.coverage.run]
 source = ["justintime"]
-omit = ["tests/*", "scripts/*"]
+omit = ["tests/*"]
 
 # * See https://docs.astral.sh/ruff/rules/ for details on Ruff's linting options
 [tool.ruff.lint]
