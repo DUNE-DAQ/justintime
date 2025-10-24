@@ -68,7 +68,7 @@ DCKR_OPTS="--user $(id -u):$(id -g) \
 #     --env NO_PROXY=${NO_PROXY} \
 #     -w /dunedaq/ \
 #     ${DCKR_BASE_IMG} -- \
-#     "cd run/dunedaq-area; source env.sh; cd ../justintime; pip install -r requirements.txt"
+#     "cd run/dunedaq-area; source env.sh; cd ../justintime; pip install -e ."
 
 
 
