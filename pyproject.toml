@@ -16,7 +16,6 @@ dependencies = [
 	     "gunicorn>=20.1.0",
 	     "numpy>=1.23.0",
 	     "pandas>=1.4.3",
-	     "datetime",
 	     "pathlib2>=2.3.7",
 	     "watchdog",
 	     "scipy",
