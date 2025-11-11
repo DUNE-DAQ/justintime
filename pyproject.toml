@@ -1,0 +1,62 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0"]
+
+[project]
+name = "justintime"
+description = "A data visualization project for dune"
+version = "1.3.1"
+readme = "docs/README.md"
+requires-python = ">=3.6"
+dependencies = [
+	     "dash",
+	     "dash_daq",
+	     "dash-bootstrap-components",
+	     "dqmtools",
+	     "gunicorn>=20.1.0",
+	     "numpy>=1.23.0",
+	     "pandas>=1.4.3",
+	     "pathlib2>=2.3.7",
+	     "watchdog",
+	     "scipy",
+	     "werkzeug",
+	     "pillow",
+	     "matplotlib",
+	     "dash-bootstrap-templates",
+	     ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-cov",
+]
+
+[project.scripts]
+check_scan_dir = "justintime.testapps.check_scan_dir:main"
+jit_check_datamanager = "justintime.testapps.jit_check_datamanager:main"
+jit_check_unpacker = "justintime.testapps.jit_check_unpacker:main"
+
+[tool.pytest.ini_options]
+addopts = "-v --tb=short --cov=justintime --cov=src/justintime tests/"  # omitted --cov-report=html to avoid suppressing table to stdout
+
+[tool.coverage.run]
+source = ["justintime"]
+omit = ["tests/*"]
+
+# * See https://docs.astral.sh/ruff/rules/ for details on Ruff's linting options
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # check for errors using PyFlakes
+    "I",    # best practices for import calls
+    "UP",   # suggestions for code modernization
+    "RUF",  # build in Ruff warnings
+    "R",    # refactoring suggestions
+]
+ignore = [
+    "E501", # Don't enforce line lengths within a linting context
+]

@@ -65,9 +65,9 @@ dunedaq: ## Build extra dunedaq packages
         -c "source ./quick_env.sh; dbt-build"
 
 .PHONY: justintime
-justintime: ## Install just-in-time extra python packages
+justintime: ## Install justintime and its dependencies
 	@echo "------------------------------------------"
-	@echo "🐍 Installing extra python packages 🐍"
+	@echo "🐍 Installing justintime and its dependencies🐍"
 	@echo "------------------------------------------"
 	cp -r ${JINT_ROOT}/ ${RUN_AREA}/justintime
 	@docker run ${DCKR_OPTS} \
@@ -78,7 +78,7 @@ justintime: ## Install just-in-time extra python packages
         --env NO_PROXY=${NO_PROXY} \
         -w /dunedaq/ \
         ${DCKR_BASE_IMG} \
-        -c "cd run/dunedaq-area; source quick_env.sh; cd ../justintime; pip install -r requirements.txt"
+        -c "cd run/dunedaq-area; source quick_env.sh; cd ../justintime; pip install -e ."
 
 image: ## Build docker image
 	@echo "------------------------------------------"

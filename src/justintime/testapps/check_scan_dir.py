@@ -38,8 +38,7 @@ def cli(interactive: bool, dir_path: str) -> None:
         IPython.embed(colors="neutral")
 
 
-
-if __name__ == "__main__":
+def main():
     from rich.logging import RichHandler
 
     logging.basicConfig(
@@ -50,3 +49,6 @@ if __name__ == "__main__":
     )
 
     cli()
+
+if __name__ == "__main__":
+    main()
