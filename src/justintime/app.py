@@ -3,6 +3,7 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import click
 import rich
+import os
 
 import logging
 from rich.logging import RichHandler
@@ -41,7 +42,8 @@ def main(verbose: bool, raw_data_path: str, port: int,
 
     theme=([dbc.themes.FLATLY if template=='flatly' else dbc.themes.DARKLY])
     rich.print("Light mode" if theme==[dbc.themes.FLATLY] else "Dark mode")
-    dash_app = Dash(__name__,external_stylesheets=theme)
+    assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
+    dash_app = Dash(__name__, external_stylesheets=theme, assets_folder=assets_folder)
 
     init_dashboard(dash_app, raw_data_path, tpc_channel_map, pds_channel_map, template)
     debug=True
