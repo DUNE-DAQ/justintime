@@ -50,7 +50,7 @@ def init_callbacks(dash_app, engine):
     def update_file_list(data):
         logging.debug('Update_partition called')
         if not data:
-            return {}
+            return ([], None)
         opts = list(data.keys())
         return (opts, None)
 
