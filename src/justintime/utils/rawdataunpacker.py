@@ -10,7 +10,6 @@ import logging
 import pandas as pd
 import numpy as np
 
-import rawdatautils.unpack.wib2 as wib_unpack
 import rawdatautils.unpack.wibeth as wibeth_unpack
 
 from rich import print
@@ -139,45 +138,6 @@ class WIBEthFragmentPandasUnpacker(WIBEthFragmentNumpyUnpacker):
 
 #         return df
 
-class WIBFragmentUnpacker(FragmentUnpacker):
-    """Legacy WIB2 fragment unpacker"""
-    
-    def __init__(self, channel_map):
-        super().__init__()
-        # self.chan_map = detchannelmaps.make_map(f'{channel_map}ChannelMap')
-        if isinstance(channel_map, str):
-            self.chan_map = detchannelmaps.make_map(f'{channel_map}ChannelMap') if not channel_map is None else None
-        else:
-            self.chan_map = channel_map
-
-    def match(self, frag_type, subsys):
-        return (frag_type == daqdataformats.FragmentType.kWIB) and (subsys == daqdataformats.SourceID.kDetectorReadout)
-    
-    def unpack(self, frag):
-        frag_hdr = frag.get_header()
-
-        payload_size = (frag.get_size()-frag_hdr.sizeof())
-        if not payload_size:
-            return None
-        print(f"fragment payload size {payload_size}")
-        
-        wf = fddetdataformats.WIB2Frame(frag.get_data())
-        wh = wf.get_header()
-        det_id, crate_no, slot_no, link_no = (wh.detector_id, wh.crate, wh.slot, wh.link)
-
-        logging.debug(f"crate: {crate_no}, slot: {slot_no}, fibre: {link_no}")
-        n_chan_per_link = 256
-
-        off_chans = [self.chan_map.get_offline_channel_from_crate_slot_fiber_chan(crate_no, slot_no, link_no, c) for c in range(n_chan_per_link)]
-
-        ts = wib_unpack.np_array_timestamp(frag)
-        adcs = wib_unpack.np_array_adc(frag)
-
-
-        df = pd.DataFrame(collections.OrderedDict([('ts', ts)]+[(off_chans[c], adcs[:,c]) for c in range(n_chan_per_link)]))
-        df = df.set_index('ts')
-
-        return df
 
 
 class TPFragmentPandasUnpacker(FragmentUnpacker):
