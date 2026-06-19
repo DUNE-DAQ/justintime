@@ -12,8 +12,6 @@ import daqdataformats
 # import detdataformats.trigger_primitive
 import detchannelmaps
 import hdf5libs
-import rawdatautils.unpack.wib as protowib_unpack
-import rawdatautils.unpack.wib2 as wib_unpack
 import logging
 import dqmtools.dataframe_creator as dfc
 
