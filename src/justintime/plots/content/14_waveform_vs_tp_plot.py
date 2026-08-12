@@ -64,7 +64,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
 
                 if data.df_dict["trh"].size != 0:
 
-                    if len(channel_num)>0:
+                    if channel_num:
 
                         #figs = []
                         #for ch in channel_num:

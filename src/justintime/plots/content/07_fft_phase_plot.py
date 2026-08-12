@@ -53,8 +53,11 @@ def init_callbacks(dash_app, storage, plot_id, engine,theme):
                 logging.info("Initial Dataframe:")
                 logging.info(data.df_tsoff)
                 
+                if fmin is None or fmax is None:
+                    return(html.Div(html.H6("Please enter both fmin and fmax")))
+
                 if len(data.df)!=0 and len(data.df.index!=0):
-                    
+
                     data.init_fft_phase(fmin, fmax)
                     #rich.print(data.fft_phase)
 
