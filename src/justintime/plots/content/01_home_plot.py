@@ -167,7 +167,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
 #                            ]
 #                        })
 
-                        table=data.df_dict["trh"]
+                        table=data.df_dict["trh"].astype(str)
                         children=([dash_table.DataTable(
                                 id='table',
                                 columns=[{"name": i, "id": i} for i in table.columns],
