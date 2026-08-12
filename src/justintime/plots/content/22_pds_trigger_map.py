@@ -1,7 +1,7 @@
 from dash import html, dcc
 from dash.dependencies import Input, Output, State
 import pandas as pd
-from ... plotting_functions import selection_line
+from ... plotting_functions import selection_line, nothing_to_plot
 from .. import plot_class
 import logging
 
@@ -49,16 +49,16 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 logging.info("Initial Dataframe:")
                 logging.info(data.df_dict)  
                 
-                df_fs, index = dfc.select_record(data.df_dict["detw_kHD_PDS_kDAPHNEStream"])
-                df_fs = df_fs.reset_index()
+                pds_keys = [k for k in data.df_dict if k.startswith("detw_k") and "PDS" in k]
+                if not pds_keys:
+                    return(html.Div(html.H6(nothing_to_plot())))
 
-                df_st, index = dfc.select_record(data.df_dict["detw_kHD_PDS_kDAPHNE"])
-                df_st = df_st.reset_index()
+                df_list = []
+                for k in pds_keys:
+                    df_tmp, index = dfc.select_record(data.df_dict[k])
+                    df_list.append(df_tmp.reset_index().filter(items=['src_id', 'channel', 'adcs']))
 
-                df_fs = df_fs.filter(items=['src_id', 'channel', 'adcs'])
-                df_st = df_st.filter(items=['src_id', 'channel', 'adcs'])
-
-                df = pd.concat([df_fs, df_st], axis=0)#.reset_index()
+                df = pd.concat(df_list, axis=0)
                 logging.info(df)
                 df.columns = ['src_id', 'channel', 'waveforms']
                 df = df_channel_map(df)

@@ -98,6 +98,7 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                                                plane=2, ele=apa_name,
                                                make_static=static_image,
                                                make_tp_overlay=("tp_overlay" in overlay_tps),
+                                               make_ta_overlay=("ta_overlay" in overlay_tps),
                                                orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"Z")
@@ -108,7 +109,8 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                         fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
                                                plane=1, ele=apa_name,
                                                make_static=static_image,
-                                               make_tp_overlay=overlay_tps,
+                                               make_tp_overlay=("tp_overlay" in overlay_tps),
+                                               make_ta_overlay=("ta_overlay" in overlay_tps),
                                                orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"V")
@@ -119,7 +121,8 @@ def init_callbacks(dash_app, storage, plot_id, engine, theme):
                         fig = plot_TPC_adc_map(df_dict=data.df_dict, det_keys=det_keys,
                                                plane=0, ele=apa_name,
                                                make_static=static_image,
-                                               make_tp_overlay=overlay_tps,
+                                               make_tp_overlay=("tp_overlay" in overlay_tps),
+                                               make_ta_overlay=("ta_overlay" in overlay_tps),
                                                orientation=orientation, colorscale=colorscale, color_range=tr_color_range,)
                         if fig is not None:
                             children += formate_figure(fig,height,"U")

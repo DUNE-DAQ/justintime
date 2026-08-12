@@ -78,7 +78,9 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         det_keys = [ key for key in data.df_dict if key.startswith('detw') and 'TPC' in key ]
                         return(html.Div(selection_line(partition,run,raw_data_file, trigger_record)),
                                html.Div([ wrap_figure(plot_TPC_waveform(df_dict=data.df_dict, det_keys=det_keys,channel=ch,
-                                                                        offset=offset,overlay_tps=overlay_tps),
+                                                                        offset=offset,
+                                                                        make_tp_overlay=("tp_overlay" in overlay_tps),
+                                                                        make_ta_overlay=("ta_overlay" in overlay_tps)),
                                                                         run_number=run,trigger_number=trigger_record[0],channel_num=ch) for ch in channel_num]))
 #                               html.Div(figs))
 

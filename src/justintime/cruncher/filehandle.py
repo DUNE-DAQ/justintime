@@ -47,11 +47,11 @@ class FileHandle:
         try:
             self.tpc_ch_map      = detchannelmaps.make_tpc_map(self.tpc_ch_map_name)
         except:
-            raise ValueError(f"Failed to create {self.tpc_channel_map_name}")
+            raise ValueError(f"Failed to create {self.tpc_ch_map_name}")
         try:
             self.pds_ch_map      = detchannelmaps.make_pds_map(self.pds_ch_map_name)
         except:
-            raise ValueError(f"Failed to create {self.pds_channel_map_name}")
+            raise ValueError(f"Failed to create {self.pds_ch_map_name}")
 
         self.det_name        = self.get_det_name(tpc_channel_map_name)
 

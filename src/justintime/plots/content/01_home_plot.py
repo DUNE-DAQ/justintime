@@ -105,8 +105,16 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         dqm_test_suite_daphne = DQMTestSuite(name="DAPHNETests")
                         dqm_test_suite_daphne.register_test(CheckTimestampsAligned(2),"CheckTimestampsAligned_PDS")
                         dqm_test_suite_daphne.register_test(CheckEmptyFragments_DAPHNE(), "CheckEmptyFragments_DAPHNE")
-                        dqm_test_suite_daphne.register_test(CheckTimestampDiffs_DAPHNE())
-                        dqm_test_suite_daphne.register_test(CheckADCData_DAPHNE())
+
+                        daphne_stream_names = [k[len("deth_k"):-len("_kDAPHNEStream")] for k in data.df_dict
+                                                if k.startswith("deth_k") and "PDS" in k and k.endswith("_kDAPHNEStream")]
+                        for daphne_name in daphne_stream_names:
+                            dqm_test_suite_daphne.register_test(CheckTimestampDiffs_DAPHNEStream(daphne_name))
+
+                        daphne_datd_keys = [k for k in data.df_dict if k.startswith("detd_k") and "PDS" in k]
+                        for daphne_key in daphne_datd_keys:
+                            daphne_det_name, daphne_data_type = daphne_key[len("detd_k"):].rsplit("_k", 1)
+                            dqm_test_suite_daphne.register_test(CheckADCData_DAPHNE(daphne_det_name, daphne_data_type))
 
 
                         dqm_test_suite.run_test(data.df_dict)
