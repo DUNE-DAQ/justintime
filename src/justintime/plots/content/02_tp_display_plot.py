@@ -13,6 +13,67 @@ from ... cruncher import datamanager
 from ... data_cache import TriggerRecordData
 from ... plotting_functions import add_dunedaq_annotation, selection_line, make_static_img, make_tp_plot,make_tp_density,nothing_to_plot
 
+import dqmtools.dataframe_creator as dfc
+
+TP_KEY = "trgd_kDAQ_kTriggerPrimitive"
+TA_KEY = "trgd_kDAQ_kTriggerActivity"
+
+PLANES = {"Z": 2, "V": 1, "U": 0}
+
+
+def _filter_by_plane(df, plane):
+    if plane is None:
+        return df
+    if plane == "other":
+        return df.loc[~df["plane"].isin(PLANES.values())]
+    return df.loc[df["plane"] == plane]
+
+
+def get_tp_df(data, plane=None):
+    if TP_KEY not in data.df_dict:
+        return pd.DataFrame()
+
+    df = data.df_dict[TP_KEY]
+    df = df.merge(data.df_dict["frh"]["trigger_timestamp_dts"], left_index=True, right_index=True)
+    df, index = dfc.select_record(df)
+    df = df.reset_index()
+
+    df["time_peak"] = (df["time_start"].astype(np.int64) + df["samples_to_peak"] * 32) - df["trigger_timestamp_dts"]
+
+    return _filter_by_plane(df, plane)
+
+
+def get_ta_df(data, plane=None):
+    if TA_KEY not in data.df_dict:
+        return pd.DataFrame()
+
+    df = data.df_dict[TA_KEY]
+    df = df.merge(data.df_dict["frh"]["trigger_timestamp_dts"], left_index=True, right_index=True)
+    df, index = dfc.select_record(df)
+    df = df.reset_index()
+
+    for col in ["time_start", "time_end", "time_peak"]:
+        df[col] = df[col].astype(np.int64) - df["trigger_timestamp_dts"]
+
+    return _filter_by_plane(df, plane)
+
+
+def get_channel_range(data, plane):
+    det_keys = [k for k in data.df_dict if k.startswith("detw") and "TPC" in k]
+
+    mins, maxs = [], []
+    for det_key in det_keys:
+        df = data.df_dict[det_key]
+        df = df.loc[df["plane"] == plane]
+        if len(df) != 0:
+            channels = df.index.get_level_values("channel")
+            mins.append(channels.min())
+            maxs.append(channels.max())
+
+    if not mins:
+        return 0, 0
+    return min(mins), max(maxs)
+
 
 def return_obj(dash_app, engine, storage,theme):
     plot_id = "02_tp_display_plot"
@@ -29,16 +90,16 @@ def return_obj(dash_app, engine, storage,theme):
     plot.add_ctrl("14_density_plot_ctrl")
     plot.add_ctrl("20_orientation_height_ctrl")
     plot.add_ctrl('02_description_ctrl')
-    
+
     init_callbacks(dash_app, storage, plot_id, engine,theme)
     return(plot)
 
 def init_callbacks(dash_app, storage, plot_id, engine,theme):
-    
+
     @dash_app.callback(
         Output(plot_id, "children"),
         Input("90_plot_button_ctrl", "n_clicks"),
-        
+
         State('07_refresh_ctrl', "value"),
         State('trigger_record_select_ctrl', "value"),
         State("partition_select_ctrl","value"),
@@ -58,100 +119,66 @@ def init_callbacks(dash_app, storage, plot_id, engine,theme):
             if plot_id in storage.shown_plots:
                 try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                 except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
-                
-                logging.info(f"Initial Time Stamp: {data.ts_min}")
-                logging.info(" ")
-                logging.info("Initial Dataframe:")
-                logging.info(data.df_tsoff)
-                if not data.tp_df.empty:
 
-                    data.init_tp()
-                    data.init_ta()
+                if data.df_dict["trh"].size != 0:
+
+                    tp_df_all = get_tp_df(data)
+                    if tp_df_all.empty:
+                        return(html.Div(html.H6("No TPs found")))
+
                     fzmin, fzmax = tr_color_range
                     fig_w, fig_h = 2600, 600
+                    info = {"run_number": data.run, "trigger_number": data.trigger}
                     children = []
-                    if not data.tp_df.empty:
-                        # logging.info("TPs for Z plane:")
-                        # logging.info(data.tp_df_Z)
-                        # logging.info("TPs for V plane:")
-                        # logging.info(data.tp_df_V)
-                        # logging.info("TPs for U plane:")
-                        # logging.info(data.tp_df_U)
-                        
-                        if "density_plot" in density:
-                            logging.info("2D Density plot chosen")
-                            
-                            if "Z" in adcmap:
-                                fig = make_tp_density(data.tp_df_Z,data.xmin_Z, data.xmax_Z,fzmin,fzmax,fig_w, fig_h, data.info)
+
+                    if "density_plot" in density:
+                        logging.info("2D Density plot chosen")
+
+                        for plane_label, plane in PLANES.items():
+                            if plane_label in adcmap:
+                                xmin, xmax = get_channel_range(data, plane)
+                                fig = make_tp_density(get_tp_df(data, plane), xmin, xmax, fzmin, fzmax, fig_w, fig_h, info)
                                 add_dunedaq_annotation(fig)
                                 children += [
-                                    html.B("TPs: Z-plane, Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
+                                    html.B(f"TPs: {plane_label}-plane, Initial TS:"+str(data.get_trigger_ts())),
                                     dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]
-                            if "V" in adcmap:
-                                fig = make_tp_density(data.tp_df_V,data.xmin_V, data.xmax_V,fzmin,fzmax,fig_w, fig_h, data.info)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                html.B("TPs: V-plane, Initial TS:"+str(data.ts_min)),
-                                #html.Hr(),
-                                dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]
-                            if "U" in adcmap:
-                                fig = make_tp_density(data.tp_df_U,data.xmin_U, data.xmax_U,fzmin,fzmax,fig_w, fig_h, data.info)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                    html.B("TPs: U-plane,Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
-                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]
-                            fig = make_tp_density(data.tp_df_O,data.xmin_O, data.xmax_O,fzmin,fzmax,fig_w, fig_h, data.info)
-                            children += [
-                                html.B("TPs: Others, Initial TS:"+str(data.ts_min)),
-                                #html.Hr(),
-                                dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]
-                            add_dunedaq_annotation(fig)
-                        else:
-                            logging.info("Scatter Plot Chosen")
-                            if "Z" in adcmap:
-                                fig = make_tp_plot(data.tp_df_Z, data.ta_df_Z, data.xmin_Z, data.xmax_Z, fzmin, fzmax, fig_w, fig_h, data.info, orientation)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                    html.B("TPs: Z-plane, Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
-                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
-                                ]
-                            if "V" in adcmap:
-                                fig = make_tp_plot(data.tp_df_V, data.ta_df_V, data.xmin_V,data.xmax_V, fzmin, fzmax, fig_w, fig_h, data.info, orientation)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                    html.B("TPs: V-plane, Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
-                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
-                                ]
-                            if "U" in adcmap:
-                                fig = make_tp_plot(data.tp_df_U, data.ta_df_U, data.xmin_U,data.xmax_U, fzmin, fzmax, fig_w, fig_h, data.info, orientation)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                    html.B("TPs: U-plane,Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
-                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
-                                ]
-                            if not data.tp_df_O.empty:
-                                fig = make_tp_plot(data.tp_df_O, None, data.xmin_O,data.xmax_O, fzmin, fzmax, fig_w, fig_h, data.info, orientation)
-                                add_dunedaq_annotation(fig)
-                                children += [
-                                    html.B("TPs: Others, Initial TS:"+str(data.ts_min)),
-                                    #html.Hr(),
-                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
-                                ]
-                        
-                        if adcmap:
-                            return(html.Div([
-                                selection_line(partition,run,raw_data_file, trigger_record),
-                                #html.Hr(),
-                                html.Div(children)]))
-                        else:
-                            return(html.Div(html.H6("No ADC map selected")))
+
+                        tp_df_o = get_tp_df(data, "other")
+                        xmin_o, xmax_o = (tp_df_o["channel"].min(), tp_df_o["channel"].max()) if not tp_df_o.empty else (0, 0)
+                        fig = make_tp_density(tp_df_o, xmin_o, xmax_o, fzmin, fzmax, fig_w, fig_h, info)
+                        add_dunedaq_annotation(fig)
+                        children += [
+                            html.B("TPs: Others, Initial TS:"+str(data.get_trigger_ts())),
+                            dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]
                     else:
-                        return(html.Div(html.H6("No TPs found")))
+                        logging.info("Scatter Plot Chosen")
+
+                        for plane_label, plane in PLANES.items():
+                            if plane_label in adcmap:
+                                xmin, xmax = get_channel_range(data, plane)
+                                fig = make_tp_plot(get_tp_df(data, plane), get_ta_df(data, plane), xmin, xmax, fzmin, fzmax, fig_w, fig_h, info, orientation)
+                                add_dunedaq_annotation(fig)
+                                children += [
+                                    html.B(f"TPs: {plane_label}-plane, Initial TS:"+str(data.get_trigger_ts())),
+                                    dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
+                                ]
+
+                        tp_df_o = get_tp_df(data, "other")
+                        if not tp_df_o.empty:
+                            xmin_o, xmax_o = tp_df_o["channel"].min(), tp_df_o["channel"].max()
+                            fig = make_tp_plot(tp_df_o, get_ta_df(data, "other"), xmin_o, xmax_o, fzmin, fzmax, fig_w, fig_h, info, orientation)
+                            add_dunedaq_annotation(fig)
+                            children += [
+                                html.B("TPs: Others, Initial TS:"+str(data.get_trigger_ts())),
+                                dcc.Graph(figure=fig,style={"marginTop":"10px","marginBottom":"10px"})
+                            ]
+
+                    if adcmap:
+                        return(html.Div([
+                            selection_line(partition,run,raw_data_file, trigger_record),
+                            html.Div(children)]))
+                    else:
+                        return(html.Div(html.H6("No ADC map selected")))
                 else:
                     return(html.Div(html.H6(nothing_to_plot())))
             return(original_state)

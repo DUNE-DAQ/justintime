@@ -147,7 +147,7 @@ def make_tp_plot(df_tp, df_ta, xmin, xmax, cmin, cmax, fig_w, fig_h, info, orien
 
 
             # histogram
-            h_args = dict(y=df_tp["channel"],name='channel', nbinsy=(xmax-xmin))
+            h_args = dict(y=df_tp["channel"],name='channel', nbinsy=int(xmax-xmin))
 
         else:
             # Axes
@@ -166,7 +166,7 @@ def make_tp_plot(df_tp, df_ta, xmin, xmax, cmin, cmax, fig_w, fig_h, info, orien
             s_col=1
             s_row=1
 
-            h_args = dict(x=df_tp["channel"],name='channel', nbinsx=(xmax-xmin))
+            h_args = dict(x=df_tp["channel"],name='channel', nbinsx=int(xmax-xmin))
 
         # fig=go.Figure()
         fig = make_subplots(
@@ -440,7 +440,7 @@ def waveform_tps(fig,df,channel_num):
 
 def tp_hist_for_mean_std(df, xmin, xmax, info):
     if not df.empty:
-        fig=go.Histogram(x=df["channel"],name='TP Multiplicity per channel', nbinsx=(xmax-xmin))
+        fig=go.Histogram(x=df["channel"],name='TP Multiplicity per channel', nbinsx=int(xmax-xmin))
 
     else:
         fig = go.Scatter()

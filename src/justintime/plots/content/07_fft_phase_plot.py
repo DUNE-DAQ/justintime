@@ -11,6 +11,65 @@ import logging
 from .. import plot_class
 from ... plotting_functions import add_dunedaq_annotation, selection_line,nothing_to_plot
 
+import dqmtools.dataframe_creator as dfc
+
+
+def _vstack_common_length(arrays):
+    """np.vstack that tolerates per-channel sample-count jitter: real hardware data can
+    have a handful of channels within the same det_key off by a few tens of samples
+    (confirmed on real VD TopTPC data: lengths of 9472/9536/9600 all present together).
+    Truncating to the shortest length present is a lot better than dropping the whole
+    det_key on a plain vstack ValueError."""
+    n = min(len(a) for a in arrays)
+    return np.vstack([a[:n] for a in arrays])
+
+
+def get_channel_phase_df(data, fmin, fmax):
+    """Per-channel mean FFT phase in the [fmin, fmax] band, across every TPC channel.
+
+    Computed directly from each det_key's waveform matrix with numpy (FFT along the
+    sample axis per channel) rather than a wide per-channel pandas reshape -- at
+    whole-detector channel counts a pandas-level reshape does not scale (see 06_fft_plot.py)."""
+
+    det_keys = [k for k in data.df_dict if k.startswith("detw") and "TPC" in k]
+    if not det_keys:
+        return pd.DataFrame()
+
+    rows = []
+    for det_key in det_keys:
+        df_tmp = data.df_dict[det_key]
+        df_tmp = df_tmp.merge(data.df_dict["frh"]["trigger_timestamp_dts"], left_index=True, right_index=True)
+        df_tmp = df_tmp.merge(data.df_dict["detd"+det_key[4:]]["adc_median"], left_index=True, right_index=True)
+        df_tmp, index = dfc.select_record(df_tmp)
+        df_tmp = df_tmp.reset_index()
+
+        if df_tmp.empty:
+            continue
+
+        adcs_matrix = _vstack_common_length(df_tmp["adcs"].values).astype(np.float64)
+        adcs_matrix -= df_tmp["adc_median"].values.astype(np.float64)[:, None]
+
+        freq = np.fft.fftfreq(adcs_matrix.shape[1], 0.512e-6)
+        band = (freq > fmin) & (freq < fmax)
+        if not band.any():
+            continue
+
+        fft = np.fft.fft(adcs_matrix, axis=1)
+        phase = np.angle(fft[:, band]).mean(axis=1)
+
+        rows.append(pd.DataFrame({
+            "channel": df_tmp["channel"].astype(int).values,
+            "plane": df_tmp["plane"].values,
+            "element": df_tmp["element"].values,
+            "phase": phase,
+        }))
+
+    if not rows:
+        return pd.DataFrame()
+
+    return pd.concat(rows, ignore_index=True)
+
+
 def return_obj(dash_app, engine, storage,theme):
     plot_id = "07_fft_phase_plot"
     plot_div = html.Div(id = plot_id)
@@ -48,20 +107,19 @@ def init_callbacks(dash_app, storage, plot_id, engine,theme):
                 try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                 except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
 
-                logging.info(f"Initial Time Stamp: {data.ts_min}")
-                logging.info(" ")
-                logging.info("Initial Dataframe:")
-                logging.info(data.df_tsoff)
-                
                 if fmin is None or fmax is None:
                     return(html.Div(html.H6("Please enter both fmin and fmax")))
 
-                if len(data.df)!=0 and len(data.df.index!=0):
+                if data.df_dict["trh"].size != 0:
 
-                    data.init_fft_phase(fmin, fmax)
-                    #rich.print(data.fft_phase)
+                    phase_df = get_channel_phase_df(data, fmin, fmax)
+                    if phase_df.empty:
+                        return(html.Div(html.H6(nothing_to_plot())))
 
-                    fig = px.scatter(data.fft_phase[f"{fmin}-{fmax}"], y='phase', color=data.fft_phase[f"{fmin}-{fmax}"]['femb'].astype(str),labels={'color':'FEMB ID'}, facet_col='plane', facet_col_wrap=2, facet_col_spacing=0.03, facet_row_spacing=0.07, title=f"Trigger record: Run {data.info['run_number']}, {data.info['trigger_number']} fmin = {fmin}, fmax = {fmax}")
+                    fig = px.scatter(phase_df, x="channel", y='phase', color=phase_df['element'].astype(str),
+                                     labels={'color':'APA/CRP'}, facet_col='plane', facet_col_wrap=2,
+                                     facet_col_spacing=0.03, facet_row_spacing=0.07,
+                                     title=f"Trigger record: Run {data.run}, {data.trigger} fmin = {fmin}, fmax = {fmax}")
                     fig.update_xaxes(matches=None, showticklabels=True)
                     fig.update_yaxes(matches=None, showticklabels=True)
                     fig.update_layout(height=900)
@@ -69,7 +127,7 @@ def init_callbacks(dash_app, storage, plot_id, engine,theme):
                     fig.update_layout(font_family="Lato", title_font_family="Lato")
                     return(html.Div([
                         selection_line(partition,run,raw_data_file, trigger_record),
-                        html.B("Noise phase by FEMB peak"),
+                        html.B("Noise phase by channel"),
                         #html.Hr(),
                         dcc.Graph(figure=fig)]))
                 else:

@@ -10,6 +10,27 @@ import rich
 import pandas as pd
 import logging
 from ... plotting_functions import add_dunedaq_annotation, selection_line,waveform_tps,nothing_to_plot
+from ... cruncher import signal
+
+import dqmtools.dataframe_creator as dfc
+
+
+def get_channel_waveform(data, channel):
+    det_keys = [k for k in data.df_dict if k.startswith("detw") and "TPC" in k]
+
+    for det_key in det_keys:
+        df = data.df_dict[det_key]
+        idx_names = df.index.names
+        df = df.reset_index()
+        df = df.loc[df["channel"] == int(channel)]
+        if len(df) == 0:
+            continue
+        df = df.set_index(idx_names)
+        df, index = dfc.select_record(df)
+        df = df.reset_index()
+        return df["adcs"].values[0]
+
+    return None
 
 
 def return_obj(dash_app, engine, storage,theme):
@@ -42,7 +63,7 @@ def init_callbacks(dash_app, storage, plot_id,theme):
         State(plot_id, "children"),
     )
     def plot_fft_graph(n_clicks, refresh,trigger_record,partition,run,plane,channel_num,raw_data_file, original_state):
-    
+
         load_figure_template(theme)
 
         if trigger_record and raw_data_file:
@@ -50,50 +71,46 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                 try: data = storage.get_trigger_record_data(trigger_record, raw_data_file)
                 except RuntimeError: return(html.Div("Please choose both a run data file and trigger record"))
 
-                logging.info(f"Initial Time Stamp: {data.ts_min}")
-                logging.info(" ")
-                logging.info("Initial Dataframe:")
-                logging.info(data.df_tsoff)
-                
-                if len(data.df)!=0 and len(data.df.index!=0):
-                    data.init_fft()
+                if data.df_dict["trh"].size != 0:
                     if channel_num:
-                        
+
                         return(html.Div(selection_line(partition,run,raw_data_file, trigger_record)),html.Div([graph(partition,run,raw_data_file, trigger_record,data,val) for val in channel_num]
                                             ))
-                        
+
                     else:
                         return(html.Div(html.H6("No Channel Selected")))
                 else:
                     return(html.Div(html.H6(nothing_to_plot())))
-                    
+
             return(original_state)
         return(html.Div())
 
 def graph(partition,run,raw_data_file, trigger_record,data,channel_num):
 
-    if int(channel_num) in data.channels:
+    waveform = get_channel_waveform(data, channel_num)
 
-        logging.info("FFT of values:")
-        logging.info(data.df_fft)
+    if waveform is not None:
+
         logging.info(f"Channel number selected: {channel_num}")
-        fig=px.line(data.df_fft,y=channel_num)
+        df_wave = pd.DataFrame({channel_num: waveform})
+        _, df_fft_sq = signal.calc_fft_fft_sq(df_wave)
         logging.info("FFT for the selected channel values:")
-        print(data.df_fft[channel_num])
+        logging.info(df_fft_sq[channel_num])
+        fig=px.line(df_fft_sq,y=channel_num)
         fig.update_layout(
         xaxis_title="Frequency",
         yaxis_title="FFT",
         #height=fig_h,
-        title_text=f"Run {data.info['run_number']}: {data.info['trigger_number']}",
+        title_text=f"Run {data.run}: {data.trigger}",
         legend=dict(x=0,y=1),
         width=950,
         )
-                                
+
         add_dunedaq_annotation(fig)
         fig.update_layout(font_family="Lato", title_font_family="Lato")
         return(html.Div([
                 html.B(f"FFT for channel {channel_num}",style={"marginTop":"10px"}),#html.Hr(),
                 dcc.Graph(id='graph-{}'.format(channel_num), figure=fig,style={"marginTop":"10px","marginBottom":"10px"})]))
-    
+
     else:
-        return(html.Div())  
+        return(html.Div())

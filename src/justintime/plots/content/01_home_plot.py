@@ -20,6 +20,7 @@ from dqmtools.dqmtests import *
 from rawdatautils.unpack.dataclasses import dts_to_seconds, dts_to_datetime
 import dqmtools.dataframe_creator as dfc
 import hdf5libs
+import detdataformats
      
 def return_obj(dash_app, engine, storage,theme):
     plot_id = "01_home_plot"
@@ -103,18 +104,28 @@ def init_callbacks(dash_app, storage, plot_id,theme):
                         Register all DAPHNE related tests
                         """
                         dqm_test_suite_daphne = DQMTestSuite(name="DAPHNETests")
-                        dqm_test_suite_daphne.register_test(CheckTimestampsAligned(2),"CheckTimestampsAligned_PDS")
                         dqm_test_suite_daphne.register_test(CheckEmptyFragments_DAPHNE(), "CheckEmptyFragments_DAPHNE")
+
+                        pds_det_names = set()
 
                         daphne_stream_names = [k[len("deth_k"):-len("_kDAPHNEStream")] for k in data.df_dict
                                                 if k.startswith("deth_k") and "PDS" in k and k.endswith("_kDAPHNEStream")]
                         for daphne_name in daphne_stream_names:
+                            pds_det_names.add(daphne_name)
                             dqm_test_suite_daphne.register_test(CheckTimestampDiffs_DAPHNEStream(daphne_name))
 
                         daphne_datd_keys = [k for k in data.df_dict if k.startswith("detd_k") and "PDS" in k]
                         for daphne_key in daphne_datd_keys:
                             daphne_det_name, daphne_data_type = daphne_key[len("detd_k"):].rsplit("_k", 1)
+                            pds_det_names.add(daphne_det_name)
                             dqm_test_suite_daphne.register_test(CheckADCData_DAPHNE(daphne_det_name, daphne_data_type))
+
+                        #look up each PDS subsystem's det_id by name from the live enum rather than hardcoding a
+                        #number -- ehn1-daqconfigs itself always references PDS subsystems by name, never by id,
+                        #and the two candidate numeric sources we found for this disagreed with each other.
+                        for pds_det_name in pds_det_names:
+                            pds_det_id = int(detdataformats.DetID.Subdetector.__members__[f"k{pds_det_name}"])
+                            dqm_test_suite_daphne.register_test(CheckTimestampsAligned(pds_det_id), f"CheckTimestampsAligned_{pds_det_name}")
 
 
                         dqm_test_suite.run_test(data.df_dict)
