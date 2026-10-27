@@ -19,7 +19,6 @@ from dqmtools.dqmtools import *
 from dqmtools.dqmtests import *
 from rawdatautils.unpack.dataclasses import dts_to_seconds, dts_to_datetime
 import dqmtools.dataframe_creator as dfc
-import hdf5libs
      
 def return_obj(dash_app, engine, storage,theme):
     plot_id = "01_home_plot"

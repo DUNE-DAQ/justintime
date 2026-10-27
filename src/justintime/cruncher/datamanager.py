@@ -11,7 +11,7 @@ import daqdataformats
 # import detdataformats.wib2
 # import detdataformats.trigger_primitive
 import detchannelmaps
-import hdf5libs
+import rawdatafilelibs
 import logging
 import dqmtools.dataframe_creator as dfc
 
@@ -161,36 +161,23 @@ class DataManager:
 
     def has_trigger_records(self, file_name: str) -> list:
         file_path = os.path.join(self.data_path, file_name)
-        rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
-        try:
-            _ = rdf.get_all_trigger_record_ids()
-            return True
-        except RuntimeError:
-            return False
+        rdf = rawdatafilelibs.open(file_path) # number of events = 10000 is not used
+        return rdf.is_trigger_record_type()
 
     def has_timeslices(self, file_name: str) -> list:
         file_path = os.path.join(self.data_path, file_name)
-        rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
-        try:
-            return [ n for n,_ in rdf.get_all_timeslice_ids()]
-        except RuntimeError:
-            return []
+        rdf = rawdatafilelibs.open(file_path) # number of events = 10000 is not used
+        return [ n for n,_ in rdf.get_all_record_ids()] if rdf.is_timeslice_type() else []
 
     def get_trigger_record_list(self, file_name: str) -> list:
         file_path = os.path.join(self.data_path, file_name)
-        rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
-        try:
-            return [ n for n,_ in rdf.get_all_trigger_record_ids()]
-        except RuntimeError:
-            return []
+        rdf = rawdatafilelibs.open(file_path) # number of events = 10000 is not used
+        return [ n for n,_ in rdf.get_all_record_ids()] if rdf.is_trigger_record_type() else []
 
     def get_timeslice_list(self, file_name: str) -> list:
         file_path = os.path.join(self.data_path, file_name)
-        rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
-        try:
-            return [ n for n,_ in rdf.get_all_timeslice_ids()]
-        except RuntimeError:
-            return []
+        rdf = rawdatafilelibs.open(file_path) # number of events = 10000 is not used
+        return [ n for n,_ in rdf.get_all_record_ids()] if rdf.is_timeslice_type() else []
 
 
     def get_entry_list(self, file_name: str) -> list:
@@ -225,22 +212,11 @@ class DataManager:
             return df_dict
 
         file_path = os.path.join(self.data_path, file_name)
-        rdf = hdf5libs.HDF5RawDataFile(file_path) # number of events = 10000 is not used
+        rdf = rawdatafilelibs.open(file_path) # number of events = 10000 is not used
             
         # Check if we're dealing with tr ot ts
-        has_trs = False
-        try:
-            _ = rdf.get_all_trigger_record_ids()
-            has_trs = True
-        except:
-            pass
-
-        has_tss = False
-        try:
-            _ = rdf.get_all_timeslice_ids()
-            has_tss = True
-        except:
-            pass
+        has_trs = rdf.is_trigger_record_type()
+        has_tss = rdf.is_timeslice_type()
 
         #----
 

@@ -437,7 +437,7 @@ class UnpackerService:
         res = {}
 
         trh = raw_data_file.get_trh((tr_id, seq_id))
-        tr_source_ids = raw_data_file.get_source_ids((tr_id, seq_id))
+        tr_source_ids = raw_data_file.get_fragment_source_ids((tr_id, seq_id))
 
         for sid in tr_source_ids:
             frag = raw_data_file.get_frag((tr_id, seq_id),sid)
