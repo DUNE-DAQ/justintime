@@ -403,7 +403,7 @@ class DAPHNEStreamFragmentPandasUnpacker(FragmentUnpacker):
         
         df = fddetdataformats.DAPHNEStreamFrame(frag.get_data())
 
-        dh = df.get_daqheader()
+        dh = df.daq_header
 
         ts, det_id, crate_no, slot_no, stream_no = (dh.get_timestamp(), dh.det_id, dh.crate_id, dh.slot_id, dh.link_id)
         print(ts, det_id, crate_no, slot_no, stream_no)
